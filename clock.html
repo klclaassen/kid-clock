@@ -10,12 +10,17 @@
     }
 
     body {
+      --mode-accent: #5e35b1;
+      --mode-soft: rgba(255,255,255,0.14);
+      --mode-canvas: #ffffff;
+      --mode-page: #1A237E;
+
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
-      transition: background 0.5s ease, color 0.5s ease;
+      transition: background 0.35s ease, color 0.35s ease;
       color: white;
       background: #1A237E;
       padding: 4vh 5vw;
@@ -93,16 +98,38 @@
     #menu-area {
       margin-bottom: 3vh;
       display: none;
+      width: min(88vw, 620px);
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 2.5vw;
+      justify-items: center;
+      align-items: center;
     }
 
     #menu-area button {
-      font-size: 4.3vw;
-      padding: 0.5em 1em;
-      border-radius: 16px;
-      border: none;
-      color: #fff;
+      width: 100%;
+      aspect-ratio: 2 / 1;
+      font-size: clamp(20px, 4vw, 34px);
       font-weight: bold;
-      margin: 0 1vw 2vw 1vw;
+      border: none;
+      border-radius: 22px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow:
+        0 6px 14px rgba(0,0,0,0.18),
+        inset 0 0 0 2px rgba(255,255,255,0.15);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      letter-spacing: 0.03em;
+    }
+
+    #menu-area button:active {
+      transform: scale(0.96);
+      box-shadow:
+        0 3px 8px rgba(0,0,0,0.18),
+        inset 0 0 0 2px rgba(255,255,255,0.15);
     }
 
     #choose-letters { background: #5e35b1; }
@@ -158,6 +185,13 @@
       display: none;
       margin-top: 3vh;
       position: relative;
+      background: var(--mode-soft);
+      border-radius: 28px;
+      padding: 20px 22px 18px;
+      box-shadow:
+        0 10px 28px rgba(0,0,0,0.12),
+        inset 0 0 0 1px rgba(255,255,255,0.12);
+      transition: background 0.3s ease;
     }
 
     #trace-layout {
@@ -176,6 +210,12 @@
       align-items: center;
       justify-content: center;
       user-select: none;
+      border-radius: 24px;
+      background: color-mix(in srgb, var(--mode-accent) 22%, white 12%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+      padding: 14px;
+      box-sizing: border-box;
+      transition: background 0.3s ease;
     }
 
     #letter-upper,
@@ -232,10 +272,8 @@
       width: 350px;
       height: 350px;
       touch-action: none;
-      background: #fff;
+      background: transparent;
       border-radius: 24px;
-      box-shadow: 0 2px 12px #0002;
-      border: 2px solid #eee;
     }
 
     #emoji-hint {
@@ -251,10 +289,11 @@
       word-break: break-word;
       text-align: center;
       padding: 0.2em;
-      background: transparent;
-      box-shadow: none;
-      border: none;
+      background: color-mix(in srgb, var(--mode-accent) 18%, white 12%);
+      border-radius: 24px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
       white-space: pre-wrap;
+      transition: background 0.3s ease;
     }
 
     #emoji-hint.number-grid {
@@ -292,6 +331,8 @@
       padding: 0.4em 0.8em;
       border-radius: 12px;
       border: none;
+      background: rgba(255,255,255,0.92);
+      color: #333;
     }
 
     #trace-feedback {
@@ -341,9 +382,9 @@
 
       <div id="canvas-stack" style="position: relative; width: 350px; height: 350px;">
         <canvas id="guide-canvas" width="350" height="350"
-          style="position:absolute; left:0; top:0; background:#fff; border-radius:24px; box-shadow: 0 2px 12px #0002; border: 2px solid #eee;"></canvas>
+          style="position:absolute; left:0; top:0; border-radius:24px; box-shadow: 0 2px 12px #0002; border: 2px solid #eee;"></canvas>
         <canvas id="trace-canvas" width="350" height="350"
-          style="position:absolute; left:0; top:0; background:transparent; border-radius:24px; touch-action:none;"></canvas>
+          style="position:absolute; left:0; top:0; border-radius:24px; touch-action:none;"></canvas>
       </div>
 
       <div id="emoji-hint">🍎</div>
@@ -386,13 +427,14 @@
   const timeEl = document.getElementById('time');
   const msgEl = document.getElementById('msg');
   const iconEl = document.getElementById('icon');
+  const canvasStack = document.getElementById('canvas-stack');
 
   let drawing = false;
   let lastX = 0;
   let lastY = 0;
 
   const WAKE_HOUR = 13;
-  const WAKE_MINUTE = 15;
+  const WAKE_MINUTE = 30;
   const WARNING_MINUTES = 30;
 
   const ICON_MOON = "\u{1F319}";
@@ -408,12 +450,51 @@
 
   const NUMBER_EMOJIS = ["⭐", "🍓", "🐸", "🦄", "🍪", "🚗", "🌈", "🫐", "🐤", "⚽"];
 
+  const MODE_THEMES = {
+    letters: {
+      accent: "#5e35b1",
+      soft: "rgba(94,53,177,0.16)",
+      canvas: "#f4efff"
+    },
+    numbers: {
+      accent: "#fb8c00",
+      soft: "rgba(251,140,0,0.16)",
+      canvas: "#fff4e8"
+    },
+    name: {
+      accent: "#607d8b",
+      soft: "rgba(96,125,139,0.17)",
+      canvas: "#eef4f7"
+    },
+    shapes: {
+      accent: "#26a69a",
+      soft: "rgba(38,166,154,0.16)",
+      canvas: "#eaf8f6"
+    }
+  };
+
+  function applyModeTheme(mode) {
+    const theme = MODE_THEMES[mode] || MODE_THEMES.letters;
+    document.body.style.setProperty('--mode-accent', theme.accent);
+    document.body.style.setProperty('--mode-soft', theme.soft);
+    document.body.style.setProperty('--mode-canvas', theme.canvas);
+
+    guideCanvas.style.background = theme.canvas;
+  }
+
+  function resetModeTheme() {
+    document.body.style.removeProperty('--mode-accent');
+    document.body.style.removeProperty('--mode-soft');
+    document.body.style.removeProperty('--mode-canvas');
+    guideCanvas.style.background = "#ffffff";
+  }
+
   function showBackButton(show) {
     backBtn.style.display = show ? 'flex' : 'none';
   }
 
   function showMenu(show) {
-    menuArea.style.display = show ? 'block' : 'none';
+    menuArea.style.display = show ? 'grid' : 'none';
   }
 
   function setCornerClockMode(enabled, labelText = "") {
@@ -442,6 +523,7 @@
     emojiHint.style.display = 'none';
     emojiHint.classList.remove('number-grid');
     emojiHint.innerHTML = '';
+    resetModeTheme();
     updateClock();
   };
 
@@ -559,26 +641,10 @@
     ctx.beginPath();
     const topCurveHeight = size * 0.3;
     ctx.moveTo(x, y + topCurveHeight);
-    ctx.bezierCurveTo(
-      x, y,
-      x - size / 2, y,
-      x - size / 2, y + topCurveHeight
-    );
-    ctx.bezierCurveTo(
-      x - size / 2, y + (size + topCurveHeight) / 2,
-      x, y + (size + topCurveHeight) / 2,
-      x, y + size
-    );
-    ctx.bezierCurveTo(
-      x, y + (size + topCurveHeight) / 2,
-      x + size / 2, y + (size + topCurveHeight) / 2,
-      x + size / 2, y + topCurveHeight
-    );
-    ctx.bezierCurveTo(
-      x + size / 2, y,
-      x, y,
-      x, y + topCurveHeight
-    );
+    ctx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
+    ctx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 2, x, y + size);
+    ctx.bezierCurveTo(x, y + (size + topCurveHeight) / 2, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
+    ctx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
   }
 
   function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
@@ -648,13 +714,13 @@
     guideCtx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
 
     if (tracingMode === 'shapes') {
-      drawShapeOutline(guideCtx, currentShape, 0.18, '#5e35b1');
+      drawShapeOutline(guideCtx, currentShape, 0.18, getComputedStyle(document.body).getPropertyValue('--mode-accent').trim() || '#26a69a');
       return;
     }
 
     guideCtx.save();
     guideCtx.globalAlpha = 0.18;
-    guideCtx.fillStyle = '#5e35b1';
+    guideCtx.fillStyle = getComputedStyle(document.body).getPropertyValue('--mode-accent').trim() || '#5e35b1';
     guideCtx.textAlign = 'center';
     guideCtx.textBaseline = 'middle';
     guideCtx.font = getTraceFont();
@@ -770,7 +836,7 @@
     drawCtx.save();
     drawCtx.lineWidth = 18;
     drawCtx.lineCap = 'round';
-    drawCtx.strokeStyle = '#5e35b1';
+    drawCtx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--mode-accent').trim() || '#5e35b1';
     drawCtx.beginPath();
     drawCtx.moveTo(lastX, lastY);
     drawCtx.lineTo(x, y);
@@ -794,7 +860,7 @@
     const b = imageData.data[idx + 2];
     const a = imageData.data[idx + 3];
     if (a < 20) return false;
-    return r < 140 && g < 120 && b < 210;
+    return a > 0;
   }
 
   function buildLetterMask() {
@@ -821,6 +887,7 @@
   document.getElementById('choose-letters').onclick = function() {
     tracingMode = 'letters';
     tracingActive = true;
+    applyModeTheme('letters');
     showMenu(false);
     tracingArea.style.display = 'block';
     clockArea.style.display = 'none';
@@ -831,6 +898,7 @@
   document.getElementById('choose-numbers').onclick = function() {
     tracingMode = 'numbers';
     tracingActive = true;
+    applyModeTheme('numbers');
     showMenu(false);
     tracingArea.style.display = 'block';
     clockArea.style.display = 'none';
@@ -841,6 +909,7 @@
   document.getElementById('choose-name').onclick = function() {
     tracingMode = 'name';
     tracingActive = true;
+    applyModeTheme('name');
     showMenu(false);
     tracingArea.style.display = 'block';
     clockArea.style.display = 'none';
@@ -851,6 +920,7 @@
   document.getElementById('choose-shapes').onclick = function() {
     tracingMode = 'shapes';
     tracingActive = true;
+    applyModeTheme('shapes');
     showMenu(false);
     tracingArea.style.display = 'block';
     clockArea.style.display = 'none';
@@ -896,12 +966,22 @@
 
     const feedback = document.getElementById('trace-feedback');
 
-    if (
-      totalUserStrokePixels > 1200 &&
-      coverage > 0.35 &&
-      onTargetRatio > 0.72 &&
-      offLetterStrokePixels < totalUserStrokePixels * 0.28
-    ) {
+    let passed = false;
+
+    if (tracingMode === 'shapes') {
+      passed =
+        totalUserStrokePixels > 900 &&
+        coverage > 0.22 &&
+        onTargetRatio > 0.18;
+    } else {
+      passed =
+        totalUserStrokePixels > 1200 &&
+        coverage > 0.35 &&
+        onTargetRatio > 0.72 &&
+        offLetterStrokePixels < totalUserStrokePixels * 0.28;
+    }
+
+    if (passed) {
       feedback.textContent = 'Great job!';
       setTimeout(() => {
         feedback.textContent = '';
@@ -970,6 +1050,7 @@
       emojiHint.style.display = 'none';
       emojiHint.classList.remove('number-grid');
       emojiHint.innerHTML = '';
+      resetModeTheme();
     } else if (almostTime) {
       const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
 
@@ -989,6 +1070,7 @@
       emojiHint.style.display = 'none';
       emojiHint.classList.remove('number-grid');
       emojiHint.innerHTML = '';
+      resetModeTheme();
     } else {
       body.style.background = "#1A237E";
       body.style.color = "white";
@@ -1005,6 +1087,7 @@
       emojiHint.style.display = 'none';
       emojiHint.classList.remove('number-grid');
       emojiHint.innerHTML = '';
+      resetModeTheme();
     }
   }
 
