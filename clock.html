@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+html, body {
+  margin:0;
+  height:100%;
+  font-family:sans-serif;
+}
+
+body {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  color:white;
+}
+
+.time{
+  font-size:25vw;
+}
+
+.msg{
+  font-size:8vw;
+}
+</style>
+</head>
+
+<body>
+
+<div class="time" id="clock"></div>
+<div class="msg" id="msg"></div>
+
+<script>
+
+const WAKE_HOUR = 7;
+
+function update(){
+
+  const now = new Date();
+  let h = now.getHours();
+  let m = now.getMinutes();
+
+  let displayHour = h % 12;
+  if(displayHour === 0) displayHour = 12;
+
+  const time =
+    displayHour + ":" + (m<10?"0":"") + m;
+
+  document.getElementById("clock").innerText = time;
+
+  if(h >= WAKE_HOUR){
+      document.body.style.background="#FFD54F";
+      document.body.style.color="#333";
+      document.getElementById("msg").innerText="☀️ YOU CAN GET UP ☀️";
+  } else {
+      document.body.style.background="#1A237E";
+      document.body.style.color="white";
+      document.getElementById("msg").innerText="🌙 SLEEP TIME 🌙";
+  }
+}
+
+setInterval(update,1000);
+update();
+
+</script>
+
+</body>
+</html>
