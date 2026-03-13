@@ -20,6 +20,7 @@
       background: #1A237E;
       padding: 4vh 5vw;
       box-sizing: border-box;
+      position: relative;
     }
 
     #icon {
@@ -95,26 +96,62 @@
     }
 
     #menu-area button {
-      font-size: 5vw;
-      padding: 0.5em 1.2em;
+      font-size: 4.3vw;
+      padding: 0.5em 1em;
       border-radius: 16px;
       border: none;
       color: #fff;
       font-weight: bold;
+      margin: 0 1vw 2vw 1vw;
     }
 
-    #choose-letters {
-      margin: 0 2vw 2vw 0;
-      background: #5e35b1;
-    }
-
-    #choose-numbers {
-      margin: 0 0 2vw 2vw;
-      background: #fb8c00;
-    }
+    #choose-letters { background: #5e35b1; }
+    #choose-numbers { background: #fb8c00; }
+    #choose-name    { background: #607d8b; }
+    #choose-shapes  { background: #26a69a; }
 
     #clock-area {
       display: block;
+      transition: all 0.35s ease;
+    }
+
+    #clock-area.corner-clock {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.18);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-radius: 22px;
+      padding: 10px 16px 12px 16px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.14), inset 0 0 0 1px rgba(255,255,255,0.18);
+      z-index: 900;
+      min-width: 96px;
+    }
+
+    #clock-area.corner-clock #icon {
+      font-size: 0;
+      margin: 0;
+      display: none;
+    }
+
+    #clock-area.corner-clock #time {
+      font-size: 5.4vw;
+      line-height: 1;
+      margin: 0;
+      letter-spacing: 0.02em;
+    }
+
+    #clock-area.corner-clock #msg {
+      font-size: 2.5vw;
+      margin-top: 0.35em;
+      opacity: 0.92;
+      line-height: 1;
+      font-weight: 700;
     }
 
     #tracing-area {
@@ -132,7 +169,7 @@
     }
 
     #letter-to-trace {
-      width: 180px;
+      width: 260px;
       height: 350px;
       display: flex;
       flex-direction: column;
@@ -148,6 +185,9 @@
       line-height: 1;
       opacity: 0.45;
       transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
+      word-break: normal;
+      text-align: center;
+      white-space: nowrap;
     }
 
     #letter-upper {
@@ -164,6 +204,30 @@
       transform: scale(1.06);
     }
 
+    .name-progress {
+      font-size: 52px !important;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    .name-char {
+      opacity: 0.58;
+      color: rgba(255,255,255,0.82);
+      transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
+      display: inline-block;
+    }
+
+    .name-char.done {
+      color: #ffd54f;
+      opacity: 1;
+    }
+
+    .name-char.current {
+      color: #ffffff;
+      opacity: 1;
+      transform: scale(1.08);
+    }
+
     #trace-canvas {
       width: 350px;
       height: 350px;
@@ -176,7 +240,7 @@
 
     #emoji-hint {
       min-width: 120px;
-      max-width: 220px;
+      max-width: 240px;
       min-height: 120px;
       display: none;
       align-items: center;
@@ -190,6 +254,28 @@
       background: transparent;
       box-shadow: none;
       border: none;
+      white-space: pre-wrap;
+    }
+
+    #emoji-hint.number-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.08em;
+      align-items: center;
+      justify-items: center;
+      min-width: 150px;
+      max-width: 220px;
+      font-size: 54px;
+      line-height: 1;
+      white-space: normal;
+    }
+
+    .number-emoji-cell {
+      width: 1.1em;
+      height: 1.1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     #trace-buttons {
@@ -236,6 +322,8 @@
   <div id="menu-area">
     <button id="choose-letters">Letters</button>
     <button id="choose-numbers">Numbers</button>
+    <button id="choose-name">Name</button>
+    <button id="choose-shapes">Shapes</button>
   </div>
 
   <div id="clock-area">
@@ -272,12 +360,17 @@
 <script>
   const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const NUMBERS = "0123456789";
+  const NAME_WORDS = ["Addy", "Kershner"];
+  const SHAPES = ["circle", "square", "triangle", "heart", "star"];
 
   let currentLetter = '';
   let tracingMode = '';
   let tracingActive = false;
   let traceVariant = 'upper';
   let currentNumberEmoji = "⭐";
+  let nameWordIndex = 0;
+  let nameCharIndex = 0;
+  let currentShape = '';
 
   const drawCanvas = document.getElementById('trace-canvas');
   const drawCtx = drawCanvas.getContext('2d');
@@ -290,13 +383,16 @@
   const tracingArea = document.getElementById('tracing-area');
   const clockArea = document.getElementById('clock-area');
   const backBtn = document.getElementById('back-to-menu');
+  const timeEl = document.getElementById('time');
+  const msgEl = document.getElementById('msg');
+  const iconEl = document.getElementById('icon');
 
   let drawing = false;
   let lastX = 0;
   let lastY = 0;
 
   const WAKE_HOUR = 13;
-  const WAKE_MINUTE = 0;
+  const WAKE_MINUTE = 15;
   const WARNING_MINUTES = 30;
 
   const ICON_MOON = "\u{1F319}";
@@ -320,66 +416,129 @@
     menuArea.style.display = show ? 'block' : 'none';
   }
 
+  function setCornerClockMode(enabled, labelText = "") {
+    if (enabled) {
+      clockArea.classList.add('corner-clock');
+      iconEl.style.display = 'none';
+      msgEl.textContent = labelText;
+    } else {
+      clockArea.classList.remove('corner-clock');
+      iconEl.style.display = '';
+    }
+  }
+
   backBtn.onclick = function() {
     tracingActive = false;
     tracingMode = '';
     traceVariant = 'upper';
+    nameWordIndex = 0;
+    nameCharIndex = 0;
+    currentShape = '';
     tracingArea.style.display = 'none';
     clockArea.style.display = 'block';
     showBackButton(false);
     clearCanvas();
     document.getElementById('trace-feedback').textContent = '';
     emojiHint.style.display = 'none';
+    emojiHint.classList.remove('number-grid');
+    emojiHint.innerHTML = '';
     updateClock();
   };
+
+  function buildNameProgressHTML(word, currentIndex) {
+    return word
+      .split('')
+      .map((char, idx) => {
+        let cls = 'name-char';
+        if (idx < currentIndex) cls += ' done';
+        else if (idx === currentIndex) cls += ' current';
+        return `<span class="${cls}">${char}</span>`;
+      })
+      .join('');
+  }
 
   function updateDisplayedTargets() {
     const upper = document.getElementById('letter-upper');
     const lower = document.getElementById('letter-lower');
 
-    upper.classList.remove('active-target');
-    lower.classList.remove('active-target');
+    upper.classList.remove('active-target', 'name-progress');
+    lower.classList.remove('active-target', 'name-progress');
 
     if (tracingMode === 'letters') {
       upper.textContent = currentLetter.toUpperCase();
       lower.textContent = currentLetter.toLowerCase();
       lower.style.display = 'inline';
 
-      if (traceVariant === 'upper') {
-        upper.classList.add('active-target');
-      } else {
-        lower.classList.add('active-target');
-      }
+      if (traceVariant === 'upper') upper.classList.add('active-target');
+      else lower.classList.add('active-target');
+
     } else if (tracingMode === 'numbers') {
       upper.textContent = currentLetter;
+      lower.textContent = '';
+      lower.style.display = 'none';
+      upper.classList.add('active-target');
+
+    } else if (tracingMode === 'name') {
+      const currentWord = NAME_WORDS[nameWordIndex];
+      upper.classList.add('name-progress');
+      upper.innerHTML = buildNameProgressHTML(currentWord, nameCharIndex);
+      lower.textContent = '';
+      lower.style.display = 'none';
+
+    } else if (tracingMode === 'shapes') {
+      upper.textContent = currentShape.charAt(0).toUpperCase() + currentShape.slice(1);
       lower.textContent = '';
       lower.style.display = 'none';
       upper.classList.add('active-target');
     }
   }
 
+  function renderNumberEmojiGrid(count, emoji) {
+    emojiHint.innerHTML = '';
+    emojiHint.classList.add('number-grid');
+
+    for (let i = 0; i < count; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'number-emoji-cell';
+      cell.textContent = emoji;
+      emojiHint.appendChild(cell);
+    }
+  }
+
   function updateEmojiHint() {
-    if (!currentLetter) {
+    if (!currentLetter && !currentShape) {
       emojiHint.style.display = 'none';
+      emojiHint.classList.remove('number-grid');
+      emojiHint.innerHTML = '';
       return;
     }
 
     if (tracingMode === 'letters') {
+      emojiHint.classList.remove('number-grid');
       emojiHint.textContent = LETTER_EMOJIS[currentLetter.toUpperCase()] || "✨";
       emojiHint.style.display = 'flex';
+
     } else if (tracingMode === 'numbers') {
       const count = parseInt(currentLetter, 10);
-      emojiHint.textContent = currentNumberEmoji.repeat(count);
-      emojiHint.style.display = 'flex';
+      renderNumberEmojiGrid(count, currentNumberEmoji);
+      emojiHint.style.display = 'grid';
+
+    } else if (tracingMode === 'name' || tracingMode === 'shapes') {
+      emojiHint.style.display = 'none';
+      emojiHint.classList.remove('number-grid');
+      emojiHint.innerHTML = '';
+
     } else {
       emojiHint.style.display = 'none';
+      emojiHint.classList.remove('number-grid');
+      emojiHint.innerHTML = '';
     }
   }
 
   function getTraceText() {
-    if (tracingMode === 'numbers') {
-      return currentLetter;
-    }
+    if (tracingMode === 'numbers') return currentLetter;
+    if (tracingMode === 'name') return currentLetter;
+    if (tracingMode === 'shapes') return '';
 
     return traceVariant === 'upper'
       ? currentLetter.toUpperCase()
@@ -387,17 +546,112 @@
   }
 
   function getTraceFont() {
-    if (tracingMode === 'numbers') {
-      return 'bold 200px Arial, Helvetica, sans-serif';
-    }
+    if (tracingMode === 'numbers') return 'bold 200px Arial, Helvetica, sans-serif';
+    if (tracingMode === 'name') return 'bold 190px Arial, Helvetica, sans-serif';
+    if (tracingMode === 'shapes') return 'bold 190px Arial, Helvetica, sans-serif';
 
     return traceVariant === 'upper'
       ? 'bold 190px Arial, Helvetica, sans-serif'
       : 'bold 170px Arial, Helvetica, sans-serif';
   }
 
+  function drawHeart(ctx, x, y, size) {
+    ctx.beginPath();
+    const topCurveHeight = size * 0.3;
+    ctx.moveTo(x, y + topCurveHeight);
+    ctx.bezierCurveTo(
+      x, y,
+      x - size / 2, y,
+      x - size / 2, y + topCurveHeight
+    );
+    ctx.bezierCurveTo(
+      x - size / 2, y + (size + topCurveHeight) / 2,
+      x, y + (size + topCurveHeight) / 2,
+      x, y + size
+    );
+    ctx.bezierCurveTo(
+      x, y + (size + topCurveHeight) / 2,
+      x + size / 2, y + (size + topCurveHeight) / 2,
+      x + size / 2, y + topCurveHeight
+    );
+    ctx.bezierCurveTo(
+      x + size / 2, y,
+      x, y,
+      x, y + topCurveHeight
+    );
+  }
+
+  function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+    const step = Math.PI / spikes;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius);
+
+    for (let i = 0; i < spikes; i++) {
+      x = cx + Math.cos(rot) * outerRadius;
+      y = cy + Math.sin(rot) * outerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
+
+      x = cx + Math.cos(rot) * innerRadius;
+      y = cy + Math.sin(rot) * innerRadius;
+      ctx.lineTo(x, y);
+      rot += step;
+    }
+
+    ctx.lineTo(cx, cy - outerRadius);
+    ctx.closePath();
+  }
+
+  function drawShapeOutline(ctx, shape, alpha = 0.18, color = '#5e35b1') {
+    ctx.save();
+    ctx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 18;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    const w = guideCanvas.width;
+    const h = guideCanvas.height;
+    const cx = w / 2;
+    const cy = h / 2;
+
+    if (shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(cx, cy, 95, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (shape === 'square') {
+      ctx.strokeRect(cx - 95, cy - 95, 190, 190);
+    } else if (shape === 'triangle') {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 110);
+      ctx.lineTo(cx - 110, cy + 95);
+      ctx.lineTo(cx + 110, cy + 95);
+      ctx.closePath();
+      ctx.stroke();
+    } else if (shape === 'heart') {
+      drawHeart(ctx, cx, cy - 70, 180);
+      ctx.stroke();
+    } else if (shape === 'star') {
+      drawStar(ctx, cx, cy, 5, 110, 48);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
   function drawLetterOverlay() {
     guideCtx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
+
+    if (tracingMode === 'shapes') {
+      drawShapeOutline(guideCtx, currentShape, 0.18, '#5e35b1');
+      return;
+    }
+
     guideCtx.save();
     guideCtx.globalAlpha = 0.18;
     guideCtx.fillStyle = '#5e35b1';
@@ -411,7 +665,6 @@
   function pickRandomLetter() {
     let prev = currentLetter;
     let next;
-
     do {
       next = LETTERS[Math.floor(Math.random() * LETTERS.length)];
     } while (LETTERS.length > 1 && next === prev);
@@ -428,7 +681,6 @@
   function pickRandomNumber() {
     let prev = currentLetter;
     let next;
-
     do {
       next = NUMBERS[Math.floor(Math.random() * NUMBERS.length)];
     } while (NUMBERS.length > 1 && next === prev);
@@ -437,6 +689,51 @@
     traceVariant = 'number';
     currentNumberEmoji = NUMBER_EMOJIS[Math.floor(Math.random() * NUMBER_EMOJIS.length)];
 
+    updateDisplayedTargets();
+    updateEmojiHint();
+    drawLetterOverlay();
+    clearCanvas();
+  }
+
+  function pickNextNameCharacter(reset = false) {
+    if (reset) {
+      nameWordIndex = 0;
+      nameCharIndex = 0;
+    }
+
+    const currentWord = NAME_WORDS[nameWordIndex];
+    currentLetter = currentWord[nameCharIndex];
+    traceVariant = 'name';
+
+    updateDisplayedTargets();
+    updateEmojiHint();
+    drawLetterOverlay();
+    clearCanvas();
+  }
+
+  function advanceNameCharacter() {
+    const currentWord = NAME_WORDS[nameWordIndex];
+    nameCharIndex++;
+
+    if (nameCharIndex >= currentWord.length) {
+      nameCharIndex = 0;
+      nameWordIndex++;
+      if (nameWordIndex >= NAME_WORDS.length) {
+        nameWordIndex = 0;
+      }
+    }
+
+    pickNextNameCharacter();
+  }
+
+  function pickRandomShape() {
+    let prev = currentShape;
+    let next;
+    do {
+      next = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+    } while (SHAPES.length > 1 && next === prev);
+
+    currentShape = next;
     updateDisplayedTargets();
     updateEmojiHint();
     drawLetterOverlay();
@@ -496,7 +793,6 @@
     const g = imageData.data[idx + 1];
     const b = imageData.data[idx + 2];
     const a = imageData.data[idx + 3];
-
     if (a < 20) return false;
     return r < 140 && g < 120 && b < 210;
   }
@@ -508,11 +804,16 @@
     const tctx = temp.getContext('2d');
 
     tctx.clearRect(0, 0, temp.width, temp.height);
-    tctx.fillStyle = '#000';
-    tctx.textAlign = 'center';
-    tctx.textBaseline = 'middle';
-    tctx.font = getTraceFont();
-    tctx.fillText(getTraceText(), temp.width / 2, temp.height / 2);
+
+    if (tracingMode === 'shapes') {
+      drawShapeOutline(tctx, currentShape, 1.0, '#000');
+    } else {
+      tctx.fillStyle = '#000';
+      tctx.textAlign = 'center';
+      tctx.textBaseline = 'middle';
+      tctx.font = getTraceFont();
+      tctx.fillText(getTraceText(), temp.width / 2, temp.height / 2);
+    }
 
     return tctx.getImageData(0, 0, temp.width, temp.height);
   }
@@ -535,6 +836,26 @@
     clockArea.style.display = 'none';
     showBackButton(true);
     pickRandomNumber();
+  };
+
+  document.getElementById('choose-name').onclick = function() {
+    tracingMode = 'name';
+    tracingActive = true;
+    showMenu(false);
+    tracingArea.style.display = 'block';
+    clockArea.style.display = 'none';
+    showBackButton(true);
+    pickNextNameCharacter(true);
+  };
+
+  document.getElementById('choose-shapes').onclick = function() {
+    tracingMode = 'shapes';
+    tracingActive = true;
+    showMenu(false);
+    tracingArea.style.display = 'block';
+    clockArea.style.display = 'none';
+    showBackButton(true);
+    pickRandomShape();
   };
 
   function checkMatch() {
@@ -584,11 +905,10 @@
       feedback.textContent = 'Great job!';
       setTimeout(() => {
         feedback.textContent = '';
-        if (tracingMode === 'letters') {
-          pickRandomLetter();
-        } else {
-          pickRandomNumber();
-        }
+        if (tracingMode === 'letters') pickRandomLetter();
+        else if (tracingMode === 'numbers') pickRandomNumber();
+        else if (tracingMode === 'name') advanceNameCharacter();
+        else if (tracingMode === 'shapes') pickRandomShape();
       }, 700);
     } else {
       feedback.textContent = 'Try again! Trace on the shape.';
@@ -621,8 +941,7 @@
     let displayHour = h % 12;
     if (displayHour === 0) displayHour = 12;
 
-    document.getElementById("time").textContent =
-      displayHour + ":" + String(m).padStart(2, "0");
+    timeEl.textContent = displayHour + ":" + String(m).padStart(2, "0");
 
     const wake = new Date(now);
     wake.setHours(WAKE_HOUR, WAKE_MINUTE, 0, 0);
@@ -632,8 +951,6 @@
     const almostTime = !awake && minsLeft <= WARNING_MINUTES && minsLeft > 0;
 
     const body = document.body;
-    const icon = document.getElementById("icon");
-    const msg = document.getElementById("msg");
     const barWrap = document.getElementById("bar-wrap");
     const barFill = document.getElementById("bar-fill");
     const minutes = document.getElementById("minutes");
@@ -641,22 +958,24 @@
     if (awake) {
       body.style.background = "#FFD54F";
       body.style.color = "#333";
-      icon.textContent = ICON_SUN;
-      msg.textContent = "Time to get up!";
+      iconEl.textContent = ICON_SUN;
+      msgEl.textContent = "Time to get up!";
+      setCornerClockMode(false);
       barWrap.style.display = "none";
       showMenu(false);
       tracingArea.style.display = 'none';
       clockArea.style.display = 'block';
       currentLetter = '';
+      currentShape = '';
       emojiHint.style.display = 'none';
+      emojiHint.classList.remove('number-grid');
+      emojiHint.innerHTML = '';
     } else if (almostTime) {
       const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
 
-      body.style.background =
-        "linear-gradient(180deg, #5e35b1 0%, #fb8c00 55%, #ffd54f 100%)";
+      body.style.background = "linear-gradient(180deg, #5e35b1 0%, #fb8c00 55%, #ffd54f 100%)";
       body.style.color = "white";
-      icon.textContent = "";
-      msg.textContent = " ";
+      setCornerClockMode(true, "almost time");
       barWrap.style.display = "block";
       showMenu(true);
       barFill.style.width = progress + "%";
@@ -666,19 +985,26 @@
       tracingArea.style.display = 'none';
       clockArea.style.display = 'block';
       currentLetter = '';
+      currentShape = '';
       emojiHint.style.display = 'none';
+      emojiHint.classList.remove('number-grid');
+      emojiHint.innerHTML = '';
     } else {
       body.style.background = "#1A237E";
       body.style.color = "white";
-      icon.textContent = ICON_MOON;
-      msg.textContent = "Sleepy time";
+      iconEl.textContent = ICON_MOON;
+      msgEl.textContent = "Sleepy time";
+      setCornerClockMode(false);
       barWrap.style.display = "none";
       showMenu(false);
       barFill.textContent = "";
       tracingArea.style.display = 'none';
       clockArea.style.display = 'block';
       currentLetter = '';
+      currentShape = '';
       emojiHint.style.display = 'none';
+      emojiHint.classList.remove('number-grid');
+      emojiHint.innerHTML = '';
     }
   }
 
