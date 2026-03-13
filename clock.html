@@ -41,7 +41,7 @@
     }
 
     #bar-wrap {
-      width: 80%;
+      width: 88%;
       max-width: 700px;
       margin-top: 4vh;
       display: none;
@@ -53,14 +53,27 @@
       font-weight: bold;
     }
 
+    #track-row {
+      display: flex;
+      align-items: center;
+      gap: 2vw;
+    }
+
+    #track-start,
+    #track-end {
+      font-size: 6vw;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
     #bar-bg {
-      width: 100%;
-      height: 5vh;
-      min-height: 24px;
-      background: rgba(255,255,255,0.25);
+      flex: 1 1 auto;
+      height: 6vh;
+      min-height: 28px;
+      background: rgba(255,255,255,0.22);
       border-radius: 999px;
       overflow: hidden;
-      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18);
     }
 
     #bar-fill {
@@ -76,83 +89,540 @@
       font-size: 4.5vw;
       font-weight: bold;
     }
+
+    #clock-area {
+      display: block;
+    }
+
+    #tracing-area {
+      display: none;
+      margin-top: 3vh;
+    }
+
+    #trace-layout {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 4vw;
+    }
+
+    #letter-to-trace {
+      height: 350px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    #letter-upper {
+      font-size: 160px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #letter-lower {
+      font-size: 110px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #trace-canvas {
+      width: 350px;
+      height: 350px;
+      touch-action: none;
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 2px 12px #0002;
+      border: 2px solid #eee;
+    }
+
+    #emoji-hint {
+      width: 160px;
+      height: 160px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 24px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 84px;
+      box-shadow: 0 2px 12px #0002;
+      user-select: none;
+    }
+
+    #trace-buttons {
+      text-align: center;
+      margin-top: 1vh;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 2vw;
+    }
+
+    #trace-buttons button {
+      font-size: 4vw;
+      padding: 0.4em 0.8em;
+      border-radius: 12px;
+      border: none;
+    }
+
+    #trace-feedback {
+      text-align: center;
+      color: #ff4081;
+      font-size: 4vw;
+      min-height: 2em;
+      margin-top: 0.6em;
+    }
   </style>
 </head>
 <body>
-  <div id="icon">🌙</div>
-  <div id="time">--:--</div>
-  <div id="msg">SLEEP TIME</div>
+  <button id="back-to-menu" aria-label="Back" style="position:fixed; left:18px; top:18px; z-index:1000; background:#fff; border:none; cursor:pointer; font-size:2.7em; color:#5e35b1; width:2.5em; height:2.5em; border-radius:50%; box-shadow:0 2px 10px #0002, 0 0 0 4px #fff6; display:none; align-items:center; justify-content:center; padding:0; transition:box-shadow 0.2s;">
+    <span style="font-weight:bold; font-size:1.3em; display:inline-block; transform:translateY(-2px);">&#8592;</span>
+  </button>
 
-  <div id="bar-wrap">
-    <div id="bar-label">Almost time</div>
-    <div id="bar-bg">
-      <div id="bar-fill"></div>
+  <div id="bar-wrap" style="margin-top:0; margin-bottom:3vh;">
+    <div id="bar-label" style="display:none;"></div>
+    <div id="track-row">
+      <div id="track-start">&#x1F319;</div>
+      <div id="bar-bg">
+        <div id="bar-fill"></div>
+      </div>
+      <div id="track-end">&#x1F31E;</div>
     </div>
     <div id="minutes"></div>
   </div>
 
-  <script>
-    const WAKE_HOUR = 11;
-    const WAKE_MINUTE = 30;
-    const WARNING_MINUTES = 30;
+  <div id="menu-area" style="margin-bottom:3vh;">
+    <button id="choose-letters" style="font-size:5vw; margin: 0 2vw 2vw 0; padding:0.5em 1.2em; border-radius:16px; border:none; background:#5e35b1; color:#fff; font-weight:bold;">Letters</button>
+    <button id="choose-numbers" style="font-size:5vw; margin: 0 0 2vw 2vw; padding:0.5em 1.2em; border-radius:16px; border:none; background:#fb8c00; color:#fff; font-weight:bold;">Numbers</button>
+  </div>
 
-    function minutesUntilWake(now) {
-      const wake = new Date(now);
-      wake.setHours(WAKE_HOUR, WAKE_MINUTE, 0, 0);
-      return Math.floor((wake - now) / 60000);
+  <div id="clock-area">
+    <div id="icon">&#x1F319;</div>
+    <div id="time">--:--</div>
+    <div id="msg">SLEEPY TIME</div>
+  </div>
+
+  <div id="tracing-area" style="display:none; position:relative;">
+    <div id="trace-layout">
+      <div id="letter-to-trace">
+        <span id="letter-upper">A</span>
+        <span id="letter-lower">a</span>
+      </div>
+
+      <div id="canvas-stack" style="position: relative; width: 350px; height: 350px;">
+        <canvas id="guide-canvas" width="350" height="350"
+          style="position:absolute; left:0; top:0; background:#fff; border-radius:24px; box-shadow: 0 2px 12px #0002; border: 2px solid #eee;"></canvas>
+        <canvas id="trace-canvas" width="350" height="350"
+          style="position:absolute; left:0; top:0; background:transparent; border-radius:24px; touch-action:none;"></canvas>
+      </div>
+
+      <div id="emoji-hint">🍎</div>
+    </div>
+
+    <div id="trace-buttons">
+      <button id="submit-canvas">Done</button>
+      <button id="clear-canvas">Clear</button>
+    </div>
+
+    <div id="trace-feedback"></div>
+  </div>
+
+<script>
+  // Back button logic
+  const backBtn = document.getElementById('back-to-menu');
+  backBtn.onclick = function() {
+    tracingActive = false;
+    tracingMode = '';
+    document.getElementById('tracing-area').style.display = 'none';
+    document.getElementById('menu-area').style.display = 'block';
+    document.getElementById('clock-area').style.display = 'block';
+    showBackButton(false);
+    clearCanvas();
+    document.getElementById('letter-upper').textContent = '';
+    document.getElementById('letter-lower').textContent = '';
+    document.getElementById('trace-feedback').textContent = '';
+    document.getElementById('emoji-hint').style.display = 'none';
+  };
+
+  function showBackButton(show) {
+    backBtn.style.display = show ? 'flex' : 'none';
+  }
+
+  const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  const NUMBERS = "0123456789";
+  let currentLetter = '';
+  let tracingMode = '';
+  let tracingActive = false;
+
+  const drawCanvas = document.getElementById('trace-canvas');
+  const drawCtx = drawCanvas.getContext('2d');
+
+  const guideCanvas = document.getElementById('guide-canvas');
+  const guideCtx = guideCanvas.getContext('2d');
+
+  const emojiHint = document.getElementById('emoji-hint');
+
+  let drawing = false;
+  let lastX = 0;
+  let lastY = 0;
+
+  const WAKE_HOUR = 14;
+  const WAKE_MINUTE = 30;
+  const WARNING_MINUTES = 30;
+
+  const ICON_MOON = "\u{1F319}";
+  const ICON_SUN = "\u{1F31E}";
+
+  const LETTER_EMOJIS = {
+    A: "🍎",
+    B: "🚌",
+    C: "🐱",
+    D: "🐶",
+    E: "🐘",
+    F: "🐟",
+    G: "🦒",
+    H: "🏠",
+    I: "🍦",
+    J: "🪼",
+    K: "🔑",
+    L: "🦁",
+    M: "🌙",
+    N: "🪺",
+    O: "🐙",
+    P: "🐷",
+    Q: "👑",
+    R: "🌈",
+    S: "⭐",
+    T: "🐯",
+    U: "☂️",
+    V: "🎻",
+    W: "🍉",
+    X: "❌",
+    Y: "🪀",
+    Z: "🦓"
+  };
+
+  function updateEmojiHint() {
+    if (tracingMode === 'letters' && currentLetter) {
+      const upper = currentLetter.toUpperCase();
+      emojiHint.textContent = LETTER_EMOJIS[upper] || "✨";
+      emojiHint.style.display = 'flex';
+    } else {
+      emojiHint.style.display = 'none';
+    }
+  }
+
+  function drawLetterOverlay() {
+    guideCtx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
+    guideCtx.save();
+    guideCtx.globalAlpha = 0.18;
+    guideCtx.fillStyle = '#5e35b1';
+    guideCtx.textAlign = 'center';
+    guideCtx.textBaseline = 'middle';
+
+    if (tracingMode === 'letters') {
+      guideCtx.font = 'bold 160px Arial, Helvetica, sans-serif';
+      guideCtx.fillText(currentLetter.toUpperCase(), guideCanvas.width / 2, guideCanvas.height / 2 - 70);
+      guideCtx.font = 'bold 110px Arial, Helvetica, sans-serif';
+      guideCtx.fillText(currentLetter.toLowerCase(), guideCanvas.width / 2, guideCanvas.height / 2 + 70);
+    } else if (tracingMode === 'numbers') {
+      guideCtx.font = 'bold 200px Arial, Helvetica, sans-serif';
+      guideCtx.fillText(currentLetter, guideCanvas.width / 2, guideCanvas.height / 2);
     }
 
-    function updateClock() {
-      const now = new Date();
-      const h = now.getHours();
-      const m = now.getMinutes();
+    guideCtx.restore();
+  }
 
-      let displayHour = h % 12;
-      if (displayHour === 0) displayHour = 12;
-      document.getElementById("time").textContent =
-        displayHour + ":" + String(m).padStart(2, "0");
+  function pickRandomLetter() {
+    let prev = currentLetter;
+    let next;
+    do {
+      next = LETTERS[Math.floor(Math.random() * LETTERS.length)];
+    } while (LETTERS.length > 1 && next === prev);
 
-      const wake = new Date(now);
-      wake.setHours(WAKE_HOUR, WAKE_MINUTE, 0, 0);
+    currentLetter = next;
+    document.getElementById('letter-upper').textContent = currentLetter.toUpperCase();
+    document.getElementById('letter-lower').textContent = currentLetter.toLowerCase();
+    updateEmojiHint();
+    drawLetterOverlay();
+    clearCanvas();
+  }
 
-      const minsLeft = Math.ceil((wake - now) / 60000);
-      const awake = now >= wake;
-      const almostTime = !awake && minsLeft <= WARNING_MINUTES && minsLeft > 0;
+  function pickRandomNumber() {
+    let prev = currentLetter;
+    let next;
+    do {
+      next = NUMBERS[Math.floor(Math.random() * NUMBERS.length)];
+    } while (NUMBERS.length > 1 && next === prev);
 
-      const body = document.body;
-      const icon = document.getElementById("icon");
-      const msg = document.getElementById("msg");
-      const barWrap = document.getElementById("bar-wrap");
-      const barFill = document.getElementById("bar-fill");
-      const minutes = document.getElementById("minutes");
+    currentLetter = next;
+    document.getElementById('letter-upper').textContent = currentLetter;
+    document.getElementById('letter-lower').textContent = '';
+    updateEmojiHint();
+    drawLetterOverlay();
+    clearCanvas();
+  }
 
-      if (awake) {
-        body.style.background = "#FFD54F";
-        body.style.color = "#333";
-        icon.textContent = "☀️";
-        msg.textContent = "YOU CAN GET UP";
-        barWrap.style.display = "none";
-      } else if (almostTime) {
-        const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
+  function getXY(e) {
+    const rect = drawCanvas.getBoundingClientRect();
 
-        body.style.background = "linear-gradient(180deg, #5e35b1 0%, #fb8c00 55%, #ffd54f 100%)";
-        body.style.color = "white";
-        icon.textContent = "🌅";
-        msg.textContent = "ALMOST TIME";
-        barWrap.style.display = "block";
-        barFill.style.width = progress + "%";
-        minutes.textContent = minsLeft + " minute" + (minsLeft === 1 ? "" : "s") + " to go";
-      } else {
-        body.style.background = "#1A237E";
-        body.style.color = "white";
-        icon.textContent = "🌙";
-        msg.textContent = "SLEEP TIME";
-        barWrap.style.display = "none";
+    if (e.touches && e.touches.length > 0) {
+      return [
+        e.touches[0].clientX - rect.left,
+        e.touches[0].clientY - rect.top
+      ];
+    }
+
+    return [
+      e.clientX - rect.left,
+      e.clientY - rect.top
+    ];
+  }
+
+  function startDraw(e) {
+    drawing = true;
+    [lastX, lastY] = getXY(e);
+  }
+
+  function draw(e) {
+    if (!drawing) return;
+
+    e.preventDefault();
+
+    const [x, y] = getXY(e);
+
+    drawCtx.save();
+    drawCtx.lineWidth = 18;
+    drawCtx.lineCap = 'round';
+    drawCtx.strokeStyle = '#5e35b1';
+    drawCtx.beginPath();
+    drawCtx.moveTo(lastX, lastY);
+    drawCtx.lineTo(x, y);
+    drawCtx.stroke();
+    drawCtx.restore();
+
+    [lastX, lastY] = [x, y];
+  }
+
+  function stopDraw() {
+    drawing = false;
+  }
+
+  function clearCanvas() {
+    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  }
+
+  function isUserStrokePixel(imageData, idx) {
+    const r = imageData.data[idx];
+    const g = imageData.data[idx + 1];
+    const b = imageData.data[idx + 2];
+    const a = imageData.data[idx + 3];
+
+    if (a < 20) return false;
+    return r < 140 && g < 120 && b < 210;
+  }
+
+  function buildLetterMask() {
+    const temp = document.createElement('canvas');
+    temp.width = drawCanvas.width;
+    temp.height = drawCanvas.height;
+    const tctx = temp.getContext('2d');
+
+    tctx.clearRect(0, 0, temp.width, temp.height);
+    tctx.fillStyle = '#000';
+    tctx.textAlign = 'center';
+    tctx.textBaseline = 'middle';
+
+    if (tracingMode === 'letters') {
+      tctx.font = 'bold 160px Arial, Helvetica, sans-serif';
+      tctx.fillText(currentLetter.toUpperCase(), temp.width / 2, temp.height / 2 - 70);
+      tctx.font = 'bold 110px Arial, Helvetica, sans-serif';
+      tctx.fillText(currentLetter.toLowerCase(), temp.width / 2, temp.height / 2 + 70);
+    } else if (tracingMode === 'numbers') {
+      tctx.font = 'bold 200px Arial, Helvetica, sans-serif';
+      tctx.fillText(currentLetter, temp.width / 2, temp.height / 2);
+    }
+
+    return tctx.getImageData(0, 0, temp.width, temp.height);
+  }
+
+  const menuArea = document.getElementById('menu-area');
+  const tracingArea = document.getElementById('tracing-area');
+  const clockArea = document.getElementById('clock-area');
+
+  document.getElementById('choose-letters').onclick = function() {
+    tracingMode = 'letters';
+    tracingActive = true;
+    menuArea.style.display = 'none';
+    tracingArea.style.display = 'block';
+    clockArea.style.display = 'none';
+    showBackButton(true);
+    pickRandomLetter();
+  };
+
+  document.getElementById('choose-numbers').onclick = function() {
+    tracingMode = 'numbers';
+    tracingActive = true;
+    menuArea.style.display = 'none';
+    tracingArea.style.display = 'block';
+    clockArea.style.display = 'none';
+    showBackButton(true);
+    pickRandomNumber();
+  };
+
+  function checkMatch() {
+    const letterMask = buildLetterMask();
+    const userImage = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
+
+    let letterPixels = 0;
+    let coveredLetterPixels = 0;
+    let totalUserStrokePixels = 0;
+    let offLetterStrokePixels = 0;
+
+    for (let y = 0; y < drawCanvas.height; y++) {
+      for (let x = 0; x < drawCanvas.width; x++) {
+        const idx = (y * drawCanvas.width + x) * 4;
+
+        const isLetter =
+          letterMask.data[idx] < 128 &&
+          letterMask.data[idx + 3] > 128;
+
+        const isUserStroke = isUserStrokePixel(userImage, idx);
+
+        if (isLetter) {
+          letterPixels++;
+          if (isUserStroke) coveredLetterPixels++;
+        }
+
+        if (isUserStroke) {
+          totalUserStrokePixels++;
+          if (!isLetter) offLetterStrokePixels++;
+        }
       }
     }
 
-    updateClock();
-    setInterval(updateClock, 1000);
-  </script>
+    const coverage = letterPixels > 0 ? coveredLetterPixels / letterPixels : 0;
+    const onTargetRatio = totalUserStrokePixels > 0
+      ? coveredLetterPixels / totalUserStrokePixels
+      : 0;
+
+    const feedback = document.getElementById('trace-feedback');
+
+    if (
+      totalUserStrokePixels > 1200 &&
+      coverage > 0.35 &&
+      onTargetRatio > 0.72 &&
+      offLetterStrokePixels < totalUserStrokePixels * 0.28
+    ) {
+      feedback.textContent = 'Great job!';
+      setTimeout(() => {
+        feedback.textContent = '';
+        if (tracingMode === 'letters') {
+          pickRandomLetter();
+        } else {
+          pickRandomNumber();
+        }
+      }, 700);
+    } else {
+      feedback.textContent = 'Try again! Trace on the letter.';
+      setTimeout(() => {
+        feedback.textContent = '';
+      }, 1200);
+      clearCanvas();
+    }
+  }
+
+  drawCanvas.addEventListener('mousedown', startDraw);
+  drawCanvas.addEventListener('mousemove', draw);
+  drawCanvas.addEventListener('mouseup', stopDraw);
+  drawCanvas.addEventListener('mouseout', stopDraw);
+  drawCanvas.addEventListener('touchstart', startDraw, { passive: false });
+  drawCanvas.addEventListener('touchmove', draw, { passive: false });
+  drawCanvas.addEventListener('touchend', stopDraw);
+  drawCanvas.addEventListener('touchcancel', stopDraw);
+
+  document.getElementById('clear-canvas').onclick = clearCanvas;
+  document.getElementById('submit-canvas').onclick = checkMatch;
+
+  function updateClock() {
+    if (tracingActive) return;
+
+    const now = new Date();
+    const h = now.getHours();
+    const m = now.getMinutes();
+
+    let displayHour = h % 12;
+    if (displayHour === 0) displayHour = 12;
+
+    document.getElementById("time").textContent =
+      displayHour + ":" + String(m).padStart(2, "0");
+
+    const wake = new Date(now);
+    wake.setHours(WAKE_HOUR, WAKE_MINUTE, 0, 0);
+
+    const minsLeft = Math.ceil((wake - now) / 60000);
+    const awake = now >= wake;
+    const almostTime = !awake && minsLeft <= WARNING_MINUTES && minsLeft > 0;
+
+    const body = document.body;
+    const icon = document.getElementById("icon");
+    const msg = document.getElementById("msg");
+    const barWrap = document.getElementById("bar-wrap");
+    const barFill = document.getElementById("bar-fill");
+    const minutes = document.getElementById("minutes");
+
+    if (awake) {
+      body.style.background = "#FFD54F";
+      body.style.color = "#333";
+      icon.textContent = ICON_SUN;
+      msg.textContent = "Time to get up!";
+      barWrap.style.display = "none";
+      tracingArea.style.display = 'none';
+      clockArea.style.display = 'block';
+      menuArea.style.display = 'block';
+    } else if (almostTime) {
+      const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
+
+      body.style.background =
+        "linear-gradient(180deg, #5e35b1 0%, #fb8c00 55%, #ffd54f 100%)";
+      body.style.color = "white";
+      icon.textContent = "";
+      msg.textContent = " ";
+      barWrap.style.display = "block";
+      barFill.style.width = progress + "%";
+      barFill.textContent = minsLeft + " min";
+      barFill.style.display = "flex";
+      barFill.style.alignItems = "center";
+      barFill.style.justifyContent = "center";
+      barFill.style.fontWeight = "bold";
+      barFill.style.color = progress > 50 ? '#333' : '#fff';
+      minutes.textContent = "";
+      tracingArea.style.display = 'none';
+      clockArea.style.display = 'block';
+      menuArea.style.display = 'block';
+      currentLetter = '';
+      emojiHint.style.display = 'none';
+    } else {
+      body.style.background = "#1A237E";
+      body.style.color = "white";
+      icon.textContent = ICON_MOON;
+      msg.textContent = "Sleepy time";
+      barWrap.style.display = "none";
+      barFill.textContent = "";
+      tracingArea.style.display = 'none';
+      clockArea.style.display = 'block';
+      menuArea.style.display = 'block';
+      currentLetter = '';
+      emojiHint.style.display = 'none';
+    }
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+</script>
 </body>
 </html>
