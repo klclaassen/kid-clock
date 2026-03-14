@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Kid Clock</title>
   <style>
     html, body {
       margin: 0;
@@ -10,1089 +12,211 @@
     }
 
     body {
-      --mode-accent: #5e35b1;
-      --mode-soft: rgba(255,255,255,0.14);
-      --mode-canvas: #ffffff;
-      --mode-page: #1A237E;
-
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
-      transition: background 0.35s ease, color 0.35s ease;
-      color: white;
-      background: #1A237E;
-      padding: 4vh 5vw;
       box-sizing: border-box;
-      position: relative;
+      padding: 4vh 5vw;
+      transition: background 0.35s ease, color 0.35s ease;
+      background: #1A237E;
+      color: white;
     }
 
     #icon {
-      font-size: 12vw;
+      font-size: 18vw;
       line-height: 1;
       margin-bottom: 2vh;
     }
 
     #time {
-      font-size: 22vw;
+      font-size: 24vw;
       line-height: 1;
       font-weight: bold;
     }
 
     #msg {
       margin-top: 2vh;
-      font-size: 7vw;
+      font-size: 8vw;
       font-weight: bold;
+      line-height: 1.1;
     }
 
     #bar-wrap {
-      width: 88%;
-      max-width: 700px;
-      margin-top: 0;
-      margin-bottom: 3vh;
+      width: 92%;
+      max-width: 900px;
+      margin-top: 4vh;
       display: none;
     }
 
     #track-row {
       display: flex;
       align-items: center;
-      gap: 2vw;
+      gap: 3vw;
     }
 
     #track-start,
     #track-end {
-      font-size: 6vw;
+      font-size: 8vw;
       line-height: 1;
       flex: 0 0 auto;
     }
 
     #bar-bg {
       flex: 1 1 auto;
-      height: 6vh;
-      min-height: 28px;
-      background: rgba(255,255,255,0.22);
+      height: 7vh;
+      min-height: 36px;
+      background: rgba(255,255,255,0.65);
       border-radius: 999px;
       overflow: hidden;
-      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18);
+      box-shadow: inset 0 0 0 3px rgba(0,0,0,0.15);
     }
 
     #bar-fill {
       width: 0%;
       height: 100%;
-      background: linear-gradient(90deg, #ffb300, #ffd54f, #fff176);
+      background: #000;
       border-radius: 999px;
       transition: width 0.5s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
     }
 
     #minutes {
-      margin-top: 1.5vh;
-      font-size: 4.5vw;
+      margin-top: 2vh;
+      font-size: 7vw;
       font-weight: bold;
-    }
-
-    #menu-area {
-      margin-bottom: 3vh;
-      display: none;
-      width: min(88vw, 620px);
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
-      gap: 2.5vw;
-      justify-items: center;
-      align-items: center;
-    }
-
-    #menu-area button {
-      width: 100%;
-      aspect-ratio: 2 / 1;
-      font-size: clamp(20px, 4vw, 34px);
-      font-weight: bold;
-      border: none;
-      border-radius: 22px;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow:
-        0 6px 14px rgba(0,0,0,0.18),
-        inset 0 0 0 2px rgba(255,255,255,0.15);
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-      letter-spacing: 0.03em;
-    }
-
-    #menu-area button:active {
-      transform: scale(0.96);
-      box-shadow:
-        0 3px 8px rgba(0,0,0,0.18),
-        inset 0 0 0 2px rgba(255,255,255,0.15);
-    }
-
-    #choose-letters { background: #5e35b1; }
-    #choose-numbers { background: #fb8c00; }
-    #choose-name    { background: #607d8b; }
-    #choose-shapes  { background: #26a69a; }
-
-    #clock-area {
-      display: block;
-      transition: all 0.35s ease;
-    }
-
-    #clock-area.corner-clock {
-      position: fixed;
-      top: 18px;
-      right: 18px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255,255,255,0.18);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      border-radius: 22px;
-      padding: 10px 16px 12px 16px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.14), inset 0 0 0 1px rgba(255,255,255,0.18);
-      z-index: 900;
-      min-width: 96px;
-    }
-
-    #clock-area.corner-clock #icon {
-      font-size: 0;
-      margin: 0;
-      display: none;
-    }
-
-    #clock-area.corner-clock #time {
-      font-size: 5.4vw;
-      line-height: 1;
-      margin: 0;
-      letter-spacing: 0.02em;
-    }
-
-    #clock-area.corner-clock #msg {
-      font-size: 2.5vw;
-      margin-top: 0.35em;
-      opacity: 0.92;
-      line-height: 1;
-      font-weight: 700;
-    }
-
-    #tracing-area {
-      display: none;
-      margin-top: 3vh;
-      position: relative;
-      background: var(--mode-soft);
-      border-radius: 28px;
-      padding: 20px 22px 18px;
-      box-shadow:
-        0 10px 28px rgba(0,0,0,0.12),
-        inset 0 0 0 1px rgba(255,255,255,0.12);
-      transition: background 0.3s ease;
-    }
-
-    #trace-layout {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;
-      gap: 4vw;
-    }
-
-    #letter-to-trace {
-      width: 260px;
-      height: 350px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      user-select: none;
-      border-radius: 24px;
-      background: color-mix(in srgb, var(--mode-accent) 22%, white 12%);
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
-      padding: 14px;
-      box-sizing: border-box;
-      transition: background 0.3s ease;
-    }
-
-    #letter-upper,
-    #letter-lower {
-      font-family: Arial, Helvetica, sans-serif;
-      font-weight: bold;
-      line-height: 1;
-      opacity: 0.45;
-      transition: opacity 0.2s ease, transform 0.2s ease, color 0.2s ease;
-      word-break: normal;
-      text-align: center;
-      white-space: nowrap;
-    }
-
-    #letter-upper {
-      font-size: 160px;
-    }
-
-    #letter-lower {
-      font-size: 110px;
-    }
-
-    .active-target {
-      opacity: 1 !important;
-      color: #fff;
-      transform: scale(1.06);
-    }
-
-    .name-progress {
-      font-size: 52px !important;
-      letter-spacing: 0.01em;
-      white-space: nowrap;
-    }
-
-    .name-char {
-      opacity: 0.58;
-      color: rgba(255,255,255,0.82);
-      transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
-      display: inline-block;
-    }
-
-    .name-char.done {
-      color: #ffd54f;
-      opacity: 1;
-    }
-
-    .name-char.current {
-      color: #ffffff;
-      opacity: 1;
-      transform: scale(1.08);
-    }
-
-    #trace-canvas {
-      width: 350px;
-      height: 350px;
-      touch-action: none;
-      background: transparent;
-      border-radius: 24px;
-    }
-
-    #emoji-hint {
-      min-width: 120px;
-      max-width: 240px;
-      min-height: 120px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 108px;
-      line-height: 1.05;
-      user-select: none;
-      word-break: break-word;
-      text-align: center;
-      padding: 0.2em;
-      background: color-mix(in srgb, var(--mode-accent) 18%, white 12%);
-      border-radius: 24px;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
-      white-space: pre-wrap;
-      transition: background 0.3s ease;
-    }
-
-    #emoji-hint.number-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.08em;
-      align-items: center;
-      justify-items: center;
-      min-width: 150px;
-      max-width: 220px;
-      font-size: 54px;
-      line-height: 1;
-      white-space: normal;
-    }
-
-    .number-emoji-cell {
-      width: 1.1em;
-      height: 1.1em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #trace-buttons {
-      text-align: center;
-      margin-top: 1vh;
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      gap: 2vw;
-    }
-
-    #trace-buttons button {
-      font-size: 4vw;
-      padding: 0.4em 0.8em;
-      border-radius: 12px;
-      border: none;
-      background: rgba(255,255,255,0.92);
-      color: #333;
-    }
-
-    #trace-feedback {
-      text-align: center;
-      color: #ff4081;
-      font-size: 4vw;
-      min-height: 2em;
-      margin-top: 0.6em;
+      line-height: 1.1;
     }
   </style>
 </head>
 <body>
-  <button id="back-to-menu" aria-label="Back" style="position:fixed; left:18px; top:18px; z-index:1000; background:#fff; border:none; cursor:pointer; font-size:2.7em; color:#5e35b1; width:2.5em; height:2.5em; border-radius:50%; box-shadow:0 2px 10px #0002, 0 0 0 4px #fff6; display:none; align-items:center; justify-content:center; padding:0;">
-    <span style="font-weight:bold; font-size:1.3em; display:inline-block; transform:translateY(-2px);">&#8592;</span>
-  </button>
+  <div id="icon">🌙</div>
+  <div id="time">--:--</div>
+  <div id="msg">Sleep time</div>
 
   <div id="bar-wrap">
     <div id="track-row">
-      <div id="track-start">&#x1F319;</div>
+      <div id="track-start">🌙</div>
       <div id="bar-bg">
         <div id="bar-fill"></div>
       </div>
-      <div id="track-end">&#x1F31E;</div>
+      <div id="track-end">🌞</div>
     </div>
     <div id="minutes"></div>
   </div>
 
-  <div id="menu-area">
-    <button id="choose-letters">Letters</button>
-    <button id="choose-numbers">Numbers</button>
-    <button id="choose-name">Name</button>
-    <button id="choose-shapes">Shapes</button>
-  </div>
-
-  <div id="clock-area">
-    <div id="icon">&#x1F319;</div>
-    <div id="time">--:--</div>
-    <div id="msg">SLEEPY TIME</div>
-  </div>
-
-  <div id="tracing-area">
-    <div id="trace-layout">
-      <div id="letter-to-trace">
-        <span id="letter-upper">A</span>
-        <span id="letter-lower">a</span>
-      </div>
-
-      <div id="canvas-stack" style="position: relative; width: 350px; height: 350px;">
-        <canvas id="guide-canvas" width="350" height="350"
-          style="position:absolute; left:0; top:0; border-radius:24px; box-shadow: 0 2px 12px #0002; border: 2px solid #eee;"></canvas>
-        <canvas id="trace-canvas" width="350" height="350"
-          style="position:absolute; left:0; top:0; border-radius:24px; touch-action:none;"></canvas>
-      </div>
-
-      <div id="emoji-hint">🍎</div>
-    </div>
-
-    <div id="trace-buttons">
-      <button id="submit-canvas">Done</button>
-      <button id="clear-canvas">Clear</button>
-    </div>
-
-    <div id="trace-feedback"></div>
-  </div>
-
-<script>
-  const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const NUMBERS = "0123456789";
-  const NAME_WORDS = ["Addy", "Kershner"];
-  const SHAPES = ["circle", "square", "triangle", "heart", "star"];
-
-  let currentLetter = '';
-  let tracingMode = '';
-  let tracingActive = false;
-  let traceVariant = 'upper';
-  let currentNumberEmoji = "⭐";
-  let nameWordIndex = 0;
-  let nameCharIndex = 0;
-  let currentShape = '';
-
-  const drawCanvas = document.getElementById('trace-canvas');
-  const drawCtx = drawCanvas.getContext('2d');
-
-  const guideCanvas = document.getElementById('guide-canvas');
-  const guideCtx = guideCanvas.getContext('2d');
-
-  const emojiHint = document.getElementById('emoji-hint');
-  const menuArea = document.getElementById('menu-area');
-  const tracingArea = document.getElementById('tracing-area');
-  const clockArea = document.getElementById('clock-area');
-  const backBtn = document.getElementById('back-to-menu');
-  const timeEl = document.getElementById('time');
-  const msgEl = document.getElementById('msg');
-  const iconEl = document.getElementById('icon');
-  const canvasStack = document.getElementById('canvas-stack');
-
-  let drawing = false;
-  let lastX = 0;
-  let lastY = 0;
-
-  const WAKE_HOUR = 13;
-  const WAKE_MINUTE = 30;
-  const WARNING_MINUTES = 30;
-
-  const ICON_MOON = "\u{1F319}";
-  const ICON_SUN = "\u{1F31E}";
-
-  const LETTER_EMOJIS = {
-    A: "🍎", B: "🚌", C: "🐱", D: "🐶", E: "🐘", F: "🐟",
-    G: "🦒", H: "🏠", I: "🍦", J: "🪼", K: "🔑", L: "🦁",
-    M: "🌙", N: "🪺", O: "🐙", P: "🐷", Q: "👑", R: "🌈",
-    S: "⭐", T: "🐯", U: "☂️", V: "🎻", W: "🍉", X: "❌",
-    Y: "🪀", Z: "🦓"
-  };
-
-  const NUMBER_EMOJIS = ["⭐", "🍓", "🐸", "🦄", "🍪", "🚗", "🌈", "🫐", "🐤", "⚽"];
-
-  const MODE_THEMES = {
-    letters: {
-      accent: "#5e35b1",
-      soft: "rgba(94,53,177,0.16)",
-      canvas: "#f4efff"
-    },
-    numbers: {
-      accent: "#fb8c00",
-      soft: "rgba(251,140,0,0.16)",
-      canvas: "#fff4e8"
-    },
-    name: {
-      accent: "#607d8b",
-      soft: "rgba(96,125,139,0.17)",
-      canvas: "#eef4f7"
-    },
-    shapes: {
-      accent: "#26a69a",
-      soft: "rgba(38,166,154,0.16)",
-      canvas: "#eaf8f6"
-    }
-  };
-
-  function applyModeTheme(mode) {
-    const theme = MODE_THEMES[mode] || MODE_THEMES.letters;
-    document.body.style.setProperty('--mode-accent', theme.accent);
-    document.body.style.setProperty('--mode-soft', theme.soft);
-    document.body.style.setProperty('--mode-canvas', theme.canvas);
-
-    guideCanvas.style.background = theme.canvas;
-  }
-
-  function resetModeTheme() {
-    document.body.style.removeProperty('--mode-accent');
-    document.body.style.removeProperty('--mode-soft');
-    document.body.style.removeProperty('--mode-canvas');
-    guideCanvas.style.background = "#ffffff";
-  }
-
-  function showBackButton(show) {
-    backBtn.style.display = show ? 'flex' : 'none';
-  }
-
-  function showMenu(show) {
-    menuArea.style.display = show ? 'grid' : 'none';
-  }
-
-  function setCornerClockMode(enabled, labelText = "") {
-    if (enabled) {
-      clockArea.classList.add('corner-clock');
-      iconEl.style.display = 'none';
-      msgEl.textContent = labelText;
-    } else {
-      clockArea.classList.remove('corner-clock');
-      iconEl.style.display = '';
-    }
-  }
-
-  backBtn.onclick = function() {
-    tracingActive = false;
-    tracingMode = '';
-    traceVariant = 'upper';
-    nameWordIndex = 0;
-    nameCharIndex = 0;
-    currentShape = '';
-    tracingArea.style.display = 'none';
-    clockArea.style.display = 'block';
-    showBackButton(false);
-    clearCanvas();
-    document.getElementById('trace-feedback').textContent = '';
-    emojiHint.style.display = 'none';
-    emojiHint.classList.remove('number-grid');
-    emojiHint.innerHTML = '';
-    resetModeTheme();
-    updateClock();
-  };
-
-  function buildNameProgressHTML(word, currentIndex) {
-    return word
-      .split('')
-      .map((char, idx) => {
-        let cls = 'name-char';
-        if (idx < currentIndex) cls += ' done';
-        else if (idx === currentIndex) cls += ' current';
-        return `<span class="${cls}">${char}</span>`;
-      })
-      .join('');
-  }
-
-  function updateDisplayedTargets() {
-    const upper = document.getElementById('letter-upper');
-    const lower = document.getElementById('letter-lower');
-
-    upper.classList.remove('active-target', 'name-progress');
-    lower.classList.remove('active-target', 'name-progress');
-
-    if (tracingMode === 'letters') {
-      upper.textContent = currentLetter.toUpperCase();
-      lower.textContent = currentLetter.toLowerCase();
-      lower.style.display = 'inline';
-
-      if (traceVariant === 'upper') upper.classList.add('active-target');
-      else lower.classList.add('active-target');
-
-    } else if (tracingMode === 'numbers') {
-      upper.textContent = currentLetter;
-      lower.textContent = '';
-      lower.style.display = 'none';
-      upper.classList.add('active-target');
-
-    } else if (tracingMode === 'name') {
-      const currentWord = NAME_WORDS[nameWordIndex];
-      upper.classList.add('name-progress');
-      upper.innerHTML = buildNameProgressHTML(currentWord, nameCharIndex);
-      lower.textContent = '';
-      lower.style.display = 'none';
-
-    } else if (tracingMode === 'shapes') {
-      upper.textContent = currentShape.charAt(0).toUpperCase() + currentShape.slice(1);
-      lower.textContent = '';
-      lower.style.display = 'none';
-      upper.classList.add('active-target');
-    }
-  }
-
-  function renderNumberEmojiGrid(count, emoji) {
-    emojiHint.innerHTML = '';
-    emojiHint.classList.add('number-grid');
-
-    for (let i = 0; i < count; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'number-emoji-cell';
-      cell.textContent = emoji;
-      emojiHint.appendChild(cell);
-    }
-  }
-
-  function updateEmojiHint() {
-    if (!currentLetter && !currentShape) {
-      emojiHint.style.display = 'none';
-      emojiHint.classList.remove('number-grid');
-      emojiHint.innerHTML = '';
-      return;
-    }
-
-    if (tracingMode === 'letters') {
-      emojiHint.classList.remove('number-grid');
-      emojiHint.textContent = LETTER_EMOJIS[currentLetter.toUpperCase()] || "✨";
-      emojiHint.style.display = 'flex';
-
-    } else if (tracingMode === 'numbers') {
-      const count = parseInt(currentLetter, 10);
-      renderNumberEmojiGrid(count, currentNumberEmoji);
-      emojiHint.style.display = 'grid';
-
-    } else if (tracingMode === 'name' || tracingMode === 'shapes') {
-      emojiHint.style.display = 'none';
-      emojiHint.classList.remove('number-grid');
-      emojiHint.innerHTML = '';
-
-    } else {
-      emojiHint.style.display = 'none';
-      emojiHint.classList.remove('number-grid');
-      emojiHint.innerHTML = '';
-    }
-  }
-
-  function getTraceText() {
-    if (tracingMode === 'numbers') return currentLetter;
-    if (tracingMode === 'name') return currentLetter;
-    if (tracingMode === 'shapes') return '';
-
-    return traceVariant === 'upper'
-      ? currentLetter.toUpperCase()
-      : currentLetter.toLowerCase();
-  }
-
-  function getTraceFont() {
-    if (tracingMode === 'numbers') return 'bold 200px Arial, Helvetica, sans-serif';
-    if (tracingMode === 'name') return 'bold 190px Arial, Helvetica, sans-serif';
-    if (tracingMode === 'shapes') return 'bold 190px Arial, Helvetica, sans-serif';
-
-    return traceVariant === 'upper'
-      ? 'bold 190px Arial, Helvetica, sans-serif'
-      : 'bold 170px Arial, Helvetica, sans-serif';
-  }
-
-  function drawHeart(ctx, x, y, size) {
-    ctx.beginPath();
-    const topCurveHeight = size * 0.3;
-    ctx.moveTo(x, y + topCurveHeight);
-    ctx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
-    ctx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 2, x, y + size);
-    ctx.bezierCurveTo(x, y + (size + topCurveHeight) / 2, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
-    ctx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
-  }
-
-  function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
-    let rot = Math.PI / 2 * 3;
-    let x = cx;
-    let y = cy;
-    const step = Math.PI / spikes;
-
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - outerRadius);
-
-    for (let i = 0; i < spikes; i++) {
-      x = cx + Math.cos(rot) * outerRadius;
-      y = cy + Math.sin(rot) * outerRadius;
-      ctx.lineTo(x, y);
-      rot += step;
-
-      x = cx + Math.cos(rot) * innerRadius;
-      y = cy + Math.sin(rot) * innerRadius;
-      ctx.lineTo(x, y);
-      rot += step;
-    }
-
-    ctx.lineTo(cx, cy - outerRadius);
-    ctx.closePath();
-  }
-
-  function drawShapeOutline(ctx, shape, alpha = 0.18, color = '#5e35b1') {
-    ctx.save();
-    ctx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 18;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-
-    const w = guideCanvas.width;
-    const h = guideCanvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-
-    if (shape === 'circle') {
-      ctx.beginPath();
-      ctx.arc(cx, cy, 95, 0, Math.PI * 2);
-      ctx.stroke();
-    } else if (shape === 'square') {
-      ctx.strokeRect(cx - 95, cy - 95, 190, 190);
-    } else if (shape === 'triangle') {
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - 110);
-      ctx.lineTo(cx - 110, cy + 95);
-      ctx.lineTo(cx + 110, cy + 95);
-      ctx.closePath();
-      ctx.stroke();
-    } else if (shape === 'heart') {
-      drawHeart(ctx, cx, cy - 70, 180);
-      ctx.stroke();
-    } else if (shape === 'star') {
-      drawStar(ctx, cx, cy, 5, 110, 48);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  }
-
-  function drawLetterOverlay() {
-    guideCtx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
-
-    if (tracingMode === 'shapes') {
-      drawShapeOutline(guideCtx, currentShape, 0.18, getComputedStyle(document.body).getPropertyValue('--mode-accent').trim() || '#26a69a');
-      return;
-    }
-
-    guideCtx.save();
-    guideCtx.globalAlpha = 0.18;
-    guideCtx.fillStyle = getComputedStyle(document.body).getPropertyValue('--mode-accent').trim() || '#5e35b1';
-    guideCtx.textAlign = 'center';
-    guideCtx.textBaseline = 'middle';
-    guideCtx.font = getTraceFont();
-    guideCtx.fillText(getTraceText(), guideCanvas.width / 2, guideCanvas.height / 2);
-    guideCtx.restore();
-  }
-
-  function pickRandomLetter() {
-    let prev = currentLetter;
-    let next;
-    do {
-      next = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-    } while (LETTERS.length > 1 && next === prev);
-
-    currentLetter = next;
-    traceVariant = Math.random() < 0.5 ? 'upper' : 'lower';
-
-    updateDisplayedTargets();
-    updateEmojiHint();
-    drawLetterOverlay();
-    clearCanvas();
-  }
-
-  function pickRandomNumber() {
-    let prev = currentLetter;
-    let next;
-    do {
-      next = NUMBERS[Math.floor(Math.random() * NUMBERS.length)];
-    } while (NUMBERS.length > 1 && next === prev);
-
-    currentLetter = next;
-    traceVariant = 'number';
-    currentNumberEmoji = NUMBER_EMOJIS[Math.floor(Math.random() * NUMBER_EMOJIS.length)];
-
-    updateDisplayedTargets();
-    updateEmojiHint();
-    drawLetterOverlay();
-    clearCanvas();
-  }
-
-  function pickNextNameCharacter(reset = false) {
-    if (reset) {
-      nameWordIndex = 0;
-      nameCharIndex = 0;
-    }
-
-    const currentWord = NAME_WORDS[nameWordIndex];
-    currentLetter = currentWord[nameCharIndex];
-    traceVariant = 'name';
-
-    updateDisplayedTargets();
-    updateEmojiHint();
-    drawLetterOverlay();
-    clearCanvas();
-  }
-
-  function advanceNameCharacter() {
-    const currentWord = NAME_WORDS[nameWordIndex];
-    nameCharIndex++;
-
-    if (nameCharIndex >= currentWord.length) {
-      nameCharIndex = 0;
-      nameWordIndex++;
-      if (nameWordIndex >= NAME_WORDS.length) {
-        nameWordIndex = 0;
-      }
-    }
-
-    pickNextNameCharacter();
-  }
-
-  function pickRandomShape() {
-    let prev = currentShape;
-    let next;
-    do {
-      next = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-    } while (SHAPES.length > 1 && next === prev);
-
-    currentShape = next;
-    updateDisplayedTargets();
-    updateEmojiHint();
-    drawLetterOverlay();
-    clearCanvas();
-  }
-
-  function getXY(e) {
-    const rect = drawCanvas.getBoundingClientRect();
-
-    if (e.touches && e.touches.length > 0) {
-      return [
-        e.touches[0].clientX - rect.left,
-        e.touches[0].clientY - rect.top
-      ];
-    }
-
-    return [
-      e.clientX - rect.left,
-      e.clientY - rect.top
-    ];
-  }
-
-  function startDraw(e) {
-    drawing = true;
-    [lastX, lastY] = getXY(e);
-  }
-
-  function draw(e) {
-    if (!drawing) return;
-    e.preventDefault();
-
-    const [x, y] = getXY(e);
-
-    drawCtx.save();
-    drawCtx.lineWidth = 18;
-    drawCtx.lineCap = 'round';
-    drawCtx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--mode-accent').trim() || '#5e35b1';
-    drawCtx.beginPath();
-    drawCtx.moveTo(lastX, lastY);
-    drawCtx.lineTo(x, y);
-    drawCtx.stroke();
-    drawCtx.restore();
-
-    [lastX, lastY] = [x, y];
-  }
-
-  function stopDraw() {
-    drawing = false;
-  }
-
-  function clearCanvas() {
-    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-  }
-
-  function isUserStrokePixel(imageData, idx) {
-    const r = imageData.data[idx];
-    const g = imageData.data[idx + 1];
-    const b = imageData.data[idx + 2];
-    const a = imageData.data[idx + 3];
-    if (a < 20) return false;
-    return a > 0;
-  }
-
-  function buildLetterMask() {
-    const temp = document.createElement('canvas');
-    temp.width = drawCanvas.width;
-    temp.height = drawCanvas.height;
-    const tctx = temp.getContext('2d');
-
-    tctx.clearRect(0, 0, temp.width, temp.height);
-
-    if (tracingMode === 'shapes') {
-      drawShapeOutline(tctx, currentShape, 1.0, '#000');
-    } else {
-      tctx.fillStyle = '#000';
-      tctx.textAlign = 'center';
-      tctx.textBaseline = 'middle';
-      tctx.font = getTraceFont();
-      tctx.fillText(getTraceText(), temp.width / 2, temp.height / 2);
-    }
-
-    return tctx.getImageData(0, 0, temp.width, temp.height);
-  }
-
-  document.getElementById('choose-letters').onclick = function() {
-    tracingMode = 'letters';
-    tracingActive = true;
-    applyModeTheme('letters');
-    showMenu(false);
-    tracingArea.style.display = 'block';
-    clockArea.style.display = 'none';
-    showBackButton(true);
-    pickRandomLetter();
-  };
-
-  document.getElementById('choose-numbers').onclick = function() {
-    tracingMode = 'numbers';
-    tracingActive = true;
-    applyModeTheme('numbers');
-    showMenu(false);
-    tracingArea.style.display = 'block';
-    clockArea.style.display = 'none';
-    showBackButton(true);
-    pickRandomNumber();
-  };
-
-  document.getElementById('choose-name').onclick = function() {
-    tracingMode = 'name';
-    tracingActive = true;
-    applyModeTheme('name');
-    showMenu(false);
-    tracingArea.style.display = 'block';
-    clockArea.style.display = 'none';
-    showBackButton(true);
-    pickNextNameCharacter(true);
-  };
-
-  document.getElementById('choose-shapes').onclick = function() {
-    tracingMode = 'shapes';
-    tracingActive = true;
-    applyModeTheme('shapes');
-    showMenu(false);
-    tracingArea.style.display = 'block';
-    clockArea.style.display = 'none';
-    showBackButton(true);
-    pickRandomShape();
-  };
-
-  function checkMatch() {
-    const letterMask = buildLetterMask();
-    const userImage = drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height);
-
-    let letterPixels = 0;
-    let coveredLetterPixels = 0;
-    let totalUserStrokePixels = 0;
-    let offLetterStrokePixels = 0;
-
-    for (let y = 0; y < drawCanvas.height; y++) {
-      for (let x = 0; x < drawCanvas.width; x++) {
-        const idx = (y * drawCanvas.width + x) * 4;
-
-        const isLetter =
-          letterMask.data[idx] < 128 &&
-          letterMask.data[idx + 3] > 128;
-
-        const isUserStroke = isUserStrokePixel(userImage, idx);
-
-        if (isLetter) {
-          letterPixels++;
-          if (isUserStroke) coveredLetterPixels++;
-        }
-
-        if (isUserStroke) {
-          totalUserStrokePixels++;
-          if (!isLetter) offLetterStrokePixels++;
-        }
-      }
-    }
-
-    const coverage = letterPixels > 0 ? coveredLetterPixels / letterPixels : 0;
-    const onTargetRatio = totalUserStrokePixels > 0
-      ? coveredLetterPixels / totalUserStrokePixels
-      : 0;
-
-    const feedback = document.getElementById('trace-feedback');
-
-    let passed = false;
-
-    if (tracingMode === 'shapes') {
-      passed =
-        totalUserStrokePixels > 900 &&
-        coverage > 0.22 &&
-        onTargetRatio > 0.18;
-    } else {
-      passed =
-        totalUserStrokePixels > 1200 &&
-        coverage > 0.35 &&
-        onTargetRatio > 0.72 &&
-        offLetterStrokePixels < totalUserStrokePixels * 0.28;
-    }
-
-    if (passed) {
-      feedback.textContent = 'Great job!';
-      setTimeout(() => {
-        feedback.textContent = '';
-        if (tracingMode === 'letters') pickRandomLetter();
-        else if (tracingMode === 'numbers') pickRandomNumber();
-        else if (tracingMode === 'name') advanceNameCharacter();
-        else if (tracingMode === 'shapes') pickRandomShape();
-      }, 700);
-    } else {
-      feedback.textContent = 'Try again! Trace on the shape.';
-      setTimeout(() => {
-        feedback.textContent = '';
-      }, 1200);
-      clearCanvas();
-    }
-  }
-
-  drawCanvas.addEventListener('mousedown', startDraw);
-  drawCanvas.addEventListener('mousemove', draw);
-  drawCanvas.addEventListener('mouseup', stopDraw);
-  drawCanvas.addEventListener('mouseout', stopDraw);
-  drawCanvas.addEventListener('touchstart', startDraw, { passive: false });
-  drawCanvas.addEventListener('touchmove', draw, { passive: false });
-  drawCanvas.addEventListener('touchend', stopDraw);
-  drawCanvas.addEventListener('touchcancel', stopDraw);
-
-  document.getElementById('clear-canvas').onclick = clearCanvas;
-  document.getElementById('submit-canvas').onclick = checkMatch;
-
-  function updateClock() {
-    if (tracingActive) return;
-
-    const now = new Date();
-    const h = now.getHours();
-    const m = now.getMinutes();
-
-    let displayHour = h % 12;
-    if (displayHour === 0) displayHour = 12;
-
-    timeEl.textContent = displayHour + ":" + String(m).padStart(2, "0");
-
-    const wake = new Date(now);
-    wake.setHours(WAKE_HOUR, WAKE_MINUTE, 0, 0);
-
-    const minsLeft = Math.ceil((wake - now) / 60000);
-    const awake = now >= wake;
-    const almostTime = !awake && minsLeft <= WARNING_MINUTES && minsLeft > 0;
+  <script>
+    // SETTINGS
+    const BED_HOUR = 18;         // 6:30 PM
+    const BED_MINUTE = 30;
+
+    const WAKE_HOUR = 10;         // example: 7:00 AM
+    const WAKE_MINUTE = 0;
+
+    const WARNING_MINUTES = 20;  // "almost time" before wake
+    const WAKE_SCREEN_HOURS = 2; // show sunshine wake screen for 2 hours
 
     const body = document.body;
+    const iconEl = document.getElementById("icon");
+    const timeEl = document.getElementById("time");
+    const msgEl = document.getElementById("msg");
     const barWrap = document.getElementById("bar-wrap");
     const barFill = document.getElementById("bar-fill");
-    const minutes = document.getElementById("minutes");
+    const minutesEl = document.getElementById("minutes");
 
-    if (awake) {
-      body.style.background = "#FFD54F";
-      body.style.color = "#333";
-      iconEl.textContent = ICON_SUN;
-      msgEl.textContent = "Time to get up!";
-      setCornerClockMode(false);
-      barWrap.style.display = "none";
-      showMenu(false);
-      tracingArea.style.display = 'none';
-      clockArea.style.display = 'block';
-      currentLetter = '';
-      currentShape = '';
-      emojiHint.style.display = 'none';
-      emojiHint.classList.remove('number-grid');
-      emojiHint.innerHTML = '';
-      resetModeTheme();
-    } else if (almostTime) {
-      const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
-
-      body.style.background = "linear-gradient(180deg, #5e35b1 0%, #fb8c00 55%, #ffd54f 100%)";
-      body.style.color = "white";
-      setCornerClockMode(true, "almost time");
-      barWrap.style.display = "block";
-      showMenu(true);
-      barFill.style.width = progress + "%";
-      barFill.textContent = minsLeft + " min";
-      barFill.style.color = progress > 50 ? '#333' : '#fff';
-      minutes.textContent = "";
-      tracingArea.style.display = 'none';
-      clockArea.style.display = 'block';
-      currentLetter = '';
-      currentShape = '';
-      emojiHint.style.display = 'none';
-      emojiHint.classList.remove('number-grid');
-      emojiHint.innerHTML = '';
-      resetModeTheme();
-    } else {
-      body.style.background = "#1A237E";
-      body.style.color = "white";
-      iconEl.textContent = ICON_MOON;
-      msgEl.textContent = "Sleepy time";
-      setCornerClockMode(false);
-      barWrap.style.display = "none";
-      showMenu(false);
-      barFill.textContent = "";
-      tracingArea.style.display = 'none';
-      clockArea.style.display = 'block';
-      currentLetter = '';
-      currentShape = '';
-      emojiHint.style.display = 'none';
-      emojiHint.classList.remove('number-grid');
-      emojiHint.innerHTML = '';
-      resetModeTheme();
+    function formatTime(date) {
+      let h = date.getHours();
+      const m = date.getMinutes();
+      let displayHour = h % 12;
+      if (displayHour === 0) displayHour = 12;
+      return displayHour + ":" + String(m).padStart(2, "0");
     }
-  }
 
-  updateClock();
-  setInterval(updateClock, 1000);
-</script>
+    function getTimeOnDate(baseDate, hour, minute) {
+      const d = new Date(baseDate);
+      d.setHours(hour, minute, 0, 0);
+      return d;
+    }
+
+    function updateClock() {
+      const now = new Date();
+      timeEl.textContent = formatTime(now);
+
+      const todayBed = getTimeOnDate(now, BED_HOUR, BED_MINUTE);
+      const todayWake = getTimeOnDate(now, WAKE_HOUR, WAKE_MINUTE);
+
+      let currentSleepStart, currentWakeTime;
+
+      // Figure out which sleep block we are currently around
+      if (now >= todayBed) {
+        // after today's bedtime, next wake is tomorrow
+        currentSleepStart = todayBed;
+        currentWakeTime = new Date(todayWake);
+        currentWakeTime.setDate(currentWakeTime.getDate() + 1);
+      } else if (now < todayWake) {
+        // after midnight but before wake-up, sleep started yesterday
+        currentSleepStart = new Date(todayBed);
+        currentSleepStart.setDate(currentSleepStart.getDate() - 1);
+        currentWakeTime = todayWake;
+      } else {
+        // daytime between wake-up and bedtime
+        currentSleepStart = todayBed;
+        currentWakeTime = todayWake;
+      }
+
+      const wakeScreenEnd = new Date(currentWakeTime);
+      wakeScreenEnd.setHours(wakeScreenEnd.getHours() + WAKE_SCREEN_HOURS);
+
+      const isSleeping = now >= currentSleepStart && now < currentWakeTime;
+      const minsLeft = Math.ceil((currentWakeTime - now) / 60000);
+      const almostTime = isSleeping && minsLeft > 0 && minsLeft <= WARNING_MINUTES;
+      const isWakeWindow = now >= currentWakeTime && now < wakeScreenEnd;
+
+      if (almostTime) {
+        const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
+
+        body.style.background = "linear-gradient(180deg, #283593 0%, #f9a825 100%)";
+        body.style.color = "white";
+        iconEl.textContent = "";
+        msgEl.textContent = "";
+        barWrap.style.display = "block";
+        barFill.style.width = progress + "%";
+        minutesEl.textContent = minsLeft === 1
+          ? "1 minute until wake-up"
+          : `${minsLeft} minutes until wake-up`;
+
+      } else if (isSleeping) {
+        body.style.background = "#1A237E";
+        body.style.color = "white";
+        iconEl.textContent = "🌙";
+        msgEl.textContent = "Sleep time";
+        barWrap.style.display = "none";
+        barFill.style.width = "0%";
+        minutesEl.textContent = "";
+
+      } else if (isWakeWindow) {
+        body.style.background = "#FFD54F";
+        body.style.color = "#222";
+        iconEl.textContent = "🌞";
+        msgEl.textContent = "Time to wake up!";
+        barWrap.style.display = "none";
+        barFill.style.width = "0%";
+        minutesEl.textContent = "";
+
+      } else {
+        // Plain daytime clock only
+        body.style.background = "#ffffff";
+        body.style.color = "#222";
+        iconEl.textContent = "";
+        msgEl.textContent = "";
+        barWrap.style.display = "none";
+        barFill.style.width = "0%";
+        minutesEl.textContent = "";
+      }
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  </script>
 </body>
 </html>

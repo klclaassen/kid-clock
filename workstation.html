@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Addy Workstation</title>
+  <style>
+    :root{
+      --bg: #1f2550;
+      --card: rgba(255,255,255,0.14);
+      --card-strong: rgba(255,255,255,0.18);
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.8);
+      --shadow: 0 10px 28px rgba(0,0,0,0.18);
+      --letters: #5e35b1;
+      --numbers: #fb8c00;
+      --name: #607d8b;
+      --shapes: #26a69a;
+      --patterns: #ec407a;
+      --challenges: #42a5f5;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #243067 0%, #1f2550 100%);
+      color: var(--text);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .clock-badge {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 50;
+      background: rgba(255,255,255,0.16);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-radius: 22px;
+      padding: 10px 16px 12px;
+      min-width: 100px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.16), inset 0 0 0 1px rgba(255,255,255,0.14);
+    }
+
+    .clock-time {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+
+    .clock-label {
+      margin-top: 4px;
+      font-size: clamp(11px, 1.8vw, 14px);
+      opacity: 0.9;
+      font-weight: 700;
+      text-transform: lowercase;
+    }
+
+    .screen {
+      width: min(1100px, 96vw);
+      min-height: min(760px, 92vh);
+      background: rgba(255,255,255,0.08);
+      border-radius: 32px;
+      box-shadow: var(--shadow), inset 0 0 0 1px rgba(255,255,255,0.10);
+      padding: 28px;
+      display: none;
+    }
+
+    .screen.active { display: block; }
+
+    .home-wrap {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .home-title {
+      font-size: clamp(34px, 6vw, 64px);
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      margin-bottom: 10px;
+    }
+
+    .home-sub {
+      font-size: clamp(18px, 2.8vw, 28px);
+      color: var(--muted);
+      margin-bottom: 36px;
+    }
+
+    .home-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      border: none;
+      border-radius: 22px;
+      padding: 0.8em 1.2em;
+      font-size: clamp(18px, 2.8vw, 28px);
+      font-weight: 800;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.18), inset 0 0 0 2px rgba(255,255,255,0.12);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    button:active { transform: scale(0.97); }
+
+    .btn-parent { background: #455a64; }
+    .btn-back { background: #455a64; font-size: 18px; padding: 0.7em 1em; border-radius: 16px; }
+    .btn-letters { background: var(--letters); }
+    .btn-numbers { background: var(--numbers); }
+    .btn-name { background: var(--name); }
+    .btn-shapes { background: var(--shapes); }
+    .btn-patterns { background: var(--patterns); }
+    .btn-challenges { background: var(--challenges); }
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 800;
+    }
+
+    .menu-grid {
+      width: min(760px, 100%);
+      margin: 20px auto 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .menu-grid button {
+      width: 100%;
+      aspect-ratio: 2 / 1;
+      font-size: clamp(20px, 3.5vw, 32px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pin-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,14,28,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+
+    .pin-overlay.active { display: flex; }
+
+    .pin-card {
+      width: min(520px, 92vw);
+      background: rgba(28,34,74,0.96);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: var(--shadow), inset 0 0 0 1px rgba(255,255,255,0.10);
+    }
+
+    .pin-title {
+      font-size: 30px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .pin-sub {
+      font-size: 18px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .pin-input {
+      width: 100%;
+      font-size: 28px;
+      border: none;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .pin-row {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .pin-error {
+      min-height: 1.4em;
+      color: #ff9db6;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .activity-shell {
+      display: grid;
+      grid-template-columns: 260px 1fr 220px;
+      gap: 24px;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .left-card, .right-card {
+      min-height: 220px;
+      border-radius: 26px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .center-card {
+      min-height: 420px;
+      border-radius: 28px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .mode-letters .left-card,
+    .mode-letters .right-card,
+    .mode-letters .center-card { background: rgba(94,53,177,0.16); }
+
+    .mode-numbers .left-card,
+    .mode-numbers .right-card,
+    .mode-numbers .center-card { background: rgba(251,140,0,0.16); }
+
+    .mode-name .left-card,
+    .mode-name .right-card,
+    .mode-name .center-card { background: rgba(96,125,139,0.18); }
+
+    .mode-shapes .left-card,
+    .mode-shapes .right-card,
+    .mode-shapes .center-card { background: rgba(38,166,154,0.16); }
+
+    .mode-patterns .left-card,
+    .mode-patterns .right-card,
+    .mode-patterns .center-card { background: rgba(236,64,122,0.16); }
+
+    .mode-challenges .left-card,
+    .mode-challenges .right-card,
+    .mode-challenges .center-card { background: rgba(66,165,245,0.16); }
+
+    .big-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .big-upper {
+      font-size: 130px;
+      font-weight: 800;
+      line-height: 1;
+      opacity: 0.5;
+    }
+
+    .big-lower {
+      font-size: 92px;
+      font-weight: 800;
+      line-height: 1;
+      opacity: 0.5;
+    }
+
+    .active-choice {
+      opacity: 1 !important;
+      transform: scale(1.05);
+    }
+
+    .emoji-big {
+      font-size: 98px;
+      line-height: 1.05;
+    }
+
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      justify-items: center;
+      align-items: center;
+      font-size: 48px;
+      line-height: 1;
+    }
+
+    .name-word {
+      font-size: 44px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .name-char {
+      opacity: 0.6;
+      color: rgba(255,255,255,0.84);
+      display: inline-block;
+    }
+
+    .name-char.done {
+      opacity: 1;
+      color: #ffd54f;
+    }
+
+    .name-char.current {
+      opacity: 1;
+      color: #ffffff;
+      transform: scale(1.07);
+    }
+
+    .shape-label {
+      font-size: 44px;
+      font-weight: 800;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
+
+    .shape-preview {
+      width: 260px;
+      height: 260px;
+      background: rgba(255,255,255,0.94);
+      border-radius: 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.14);
+      position: relative;
+    }
+
+    canvas { border-radius: 24px; }
+
+    .pattern-strip {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 56px;
+    }
+
+    .pattern-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      width: min(520px, 100%);
+      margin-top: 18px;
+    }
+
+    .pattern-option {
+      background: rgba(255,255,255,0.14);
+      border-radius: 20px;
+      padding: 20px;
+      font-size: 56px;
+      cursor: pointer;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10);
+      user-select: none;
+    }
+
+    .challenge-card {
+      width: min(680px, 100%);
+      min-height: 220px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: clamp(26px, 4vw, 42px);
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .sub-actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-soft {
+      background: rgba(255,255,255,0.18);
+      color: white;
+      font-size: 18px;
+      padding: 0.7em 1em;
+      border-radius: 16px;
+    }
+
+    .feedback {
+      margin-top: 14px;
+      min-height: 1.4em;
+      font-weight: 800;
+      color: #ffd8e5;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock-badge">
+    <div class="clock-time" id="clockTime">--:--</div>
+    <div class="clock-label">workstation</div>
+  </div>
+
+  <div class="screen active" id="homeScreen">
+    <div class="home-wrap">
+      <div class="home-title">Addy Workstation</div>
+      <div class="home-sub">calm tools for little mornings</div>
+      <div class="home-actions">
+        <button class="btn-parent" id="openParentMenu">Parent Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="menuScreen">
+    <div class="top-row">
+      <div class="section-title">Learning Menu</div>
+      <button class="btn-back" id="menuBackBtn">Back</button>
+    </div>
+
+    <div class="menu-grid">
+      <button class="btn-letters" id="btnLetters">Letters</button>
+      <button class="btn-numbers" id="btnNumbers">Numbers</button>
+      <button class="btn-name" id="btnName">Name</button>
+      <button class="btn-shapes" id="btnShapes">Shapes</button>
+      <button class="btn-patterns" id="btnPatterns">Patterns</button>
+      <button class="btn-challenges" id="btnChallenges">Challenge Cards</button>
+    </div>
+  </div>
+
+  <div class="screen mode-letters" id="lettersScreen">
+    <div class="top-row">
+      <div class="section-title">Letters</div>
+      <button class="btn-back backToMenu">Back</button>
+    </div>
+
+    <div class="activity-shell">
+      <div class="left-card">
+        <div class="big-pair">
+          <div class="big-upper" id="lettersUpper">A</div>
+          <div class="big-lower" id="lettersLower">a</div>
+        </div>
+      </div>
+
+      <div class="center-card">
+        <canvas id="lettersCanvas" width="340" height="340" style="background:#fff; box-shadow:0 2px 12px rgba(0,0,0,0.14);"></canvas>
+        <div class="sub-actions">
+          <button class="btn-soft" id="lettersNew">New</button>
+        </div>
+      </div>
+
+      <div class="right-card">
+        <div class="emoji-big" id="lettersEmoji">🍎</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen mode-numbers" id="numbersScreen">
+    <div class="top-row">
+      <div class="section-title">Numbers</div>
+      <button class="btn-back backToMenu">Back</button>
+    </div>
+
+    <div class="activity-shell">
+      <div class="left-card">
+        <div class="big-upper active-choice" id="numbersValue">4</div>
+      </div>
+
+      <div class="center-card">
+        <canvas id="numbersCanvas" width="340" height="340" style="background:#fff; box-shadow:0 2px 12px rgba(0,0,0,0.14);"></canvas>
+        <div class="sub-actions">
+          <button class="btn-soft" id="numbersNew">New</button>
+        </div>
+      </div>
+
+      <div class="right-card">
+        <div class="emoji-grid" id="numbersGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen mode-name" id="nameScreen">
+    <div class="top-row">
+      <div class="section-title">Name</div>
+      <button class="btn-back backToMenu">Back</button>
+    </div>
+
+    <div class="activity-shell">
+      <div class="left-card">
+        <div class="name-word" id="nameWord"></div>
+      </div>
+
+      <div class="center-card">
+        <canvas id="nameCanvas" width="340" height="340" style="background:#fff; box-shadow:0 2px 12px rgba(0,0,0,0.14);"></canvas>
+        <div class="sub-actions">
+          <button class="btn-soft" id="nameNext">Next Letter</button>
+        </div>
+      </div>
+
+      <div class="right-card">
+        <div class="emoji-big">✍️</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen mode-shapes" id="shapesScreen">
+    <div class="top-row">
+      <div class="section-title">Shapes</div>
+      <button class="btn-back backToMenu">Back</button>
+    </div>
+
+    <div class="activity-shell">
+      <div class="left-card">
+        <div class="shape-label" id="shapeLabel">Circle</div>
+      </div>
+
+      <div class="center-card">
+        <canvas id="shapesCanvas" width="340" height="340" style="background:#fff; box-shadow:0 2px 12px rgba(0,0,0,0.14);"></canvas>
+        <div class="sub-actions">
+          <button class="btn-soft" id="shapesNew">New</button>
+        </div>
+      </div>
+
+      <div class="right-card">
+        <div class="shape-preview">
+          <canvas id="shapesPreview" width="260" height="260"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen mode-patterns" id="patternsScreen">
+    <div class="top-row">
+      <div class="section-title">Patterns</div>
+      <button class="btn-back backToMenu">Back</button>
+    </div>
+
+    <div class="center-card" style="min-height:520px;">
+      <div class="pattern-strip" id="patternStrip"></div>
+      <div class="pattern-options" id="patternOptions"></div>
+      <div class="feedback" id="patternFeedback"></div>
+      <div class="sub-actions">
+        <button class="btn-soft" id="newPattern">New Pattern</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen mode-challenges" id="challengesScreen">
+    <div class="top-row">
+      <div class="section-title">Challenge Cards</div>
+      <button class="btn-back backToMenu">Back</button>
+    </div>
+
+    <div class="center-card" style="min-height:520px;">
+      <div class="challenge-card" id="challengeCard"></div>
+      <div class="sub-actions">
+        <button class="btn-soft" id="newChallenge">New Challenge</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pin-overlay" id="pinOverlay">
+    <div class="pin-card">
+      <div class="pin-title">Parent Access</div>
+      <div class="pin-sub">Enter PIN to open the learning menu.</div>
+      <div class="pin-error" id="pinError"></div>
+      <input class="pin-input" id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="PIN">
+      <div class="pin-row">
+        <button class="btn-soft" id="pinCancel">Cancel</button>
+        <button class="btn-parent" id="pinSubmit">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PARENT_PIN = "2468";
+
+    const screens = {
+      home: document.getElementById("homeScreen"),
+      menu: document.getElementById("menuScreen"),
+      letters: document.getElementById("lettersScreen"),
+      numbers: document.getElementById("numbersScreen"),
+      name: document.getElementById("nameScreen"),
+      shapes: document.getElementById("shapesScreen"),
+      patterns: document.getElementById("patternsScreen"),
+      challenges: document.getElementById("challengesScreen"),
+    };
+
+    function showScreen(key) {
+      Object.values(screens).forEach(el => el.classList.remove("active"));
+      screens[key].classList.add("active");
+    }
+
+    function updateClock() {
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes();
+      let dh = h % 12;
+      if (dh === 0) dh = 12;
+      document.getElementById("clockTime").textContent =
+        dh + ":" + String(m).padStart(2, "0");
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    const pinOverlay = document.getElementById("pinOverlay");
+    const pinInput = document.getElementById("pinInput");
+    const pinError = document.getElementById("pinError");
+
+    document.getElementById("openParentMenu").onclick = () => {
+      pinOverlay.classList.add("active");
+      pinInput.value = "";
+      pinError.textContent = "";
+      setTimeout(() => pinInput.focus(), 50);
+    };
+
+    document.getElementById("pinCancel").onclick = () => {
+      pinOverlay.classList.remove("active");
+    };
+
+    document.getElementById("pinSubmit").onclick = () => {
+      if (pinInput.value === PARENT_PIN) {
+        pinOverlay.classList.remove("active");
+        showScreen("menu");
+      } else {
+        pinError.textContent = "That PIN didn’t work.";
+        pinInput.value = "";
+      }
+    };
+
+    pinInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("pinSubmit").click();
+    });
+
+    document.getElementById("menuBackBtn").onclick = () => showScreen("home");
+    document.querySelectorAll(".backToMenu").forEach(btn => {
+      btn.onclick = () => showScreen("menu");
+    });
+
+    const LETTER_EMOJIS = {
+      A: "🍎", B: "🚌", C: "🐱", D: "🐶", E: "🐘", F: "🐟",
+      G: "🦒", H: "🏠", I: "🍦", J: "🪼", K: "🔑", L: "🦁",
+      M: "🌙", N: "🪺", O: "🐙", P: "🐷", Q: "👑", R: "🌈",
+      S: "⭐", T: "🐯", U: "☂️", V: "🎻", W: "🍉", X: "❌",
+      Y: "🪀", Z: "🦓"
+    };
+
+    const NUMBER_EMOJIS = ["⭐", "🍓", "🐸", "🦄", "🍪", "🚗", "🌈", "🫐", "🐤", "⚽"];
+    const NAME_WORDS = ["Addy", "Kershner"];
+    const SHAPES = ["circle", "square", "triangle", "heart", "star"];
+
+    let currentLetter = "A";
+    let currentLetterVariant = "upper";
+    let currentNumber = "4";
+    let currentNumberEmoji = "⭐";
+    let nameWordIndex = 0;
+    let nameCharIndex = 0;
+    let currentShape = "circle";
+
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function drawGuideText(canvas, text, font, color = "#5e35b1") {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.18;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = font;
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      ctx.restore();
+    }
+
+    document.getElementById("btnLetters").onclick = () => {
+      newLetters();
+      showScreen("letters");
+    };
+
+    function newLetters() {
+      currentLetter = randomItem("ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""));
+      currentLetterVariant = Math.random() < 0.5 ? "upper" : "lower";
+
+      const upper = document.getElementById("lettersUpper");
+      const lower = document.getElementById("lettersLower");
+      upper.textContent = currentLetter.toUpperCase();
+      lower.textContent = currentLetter.toLowerCase();
+      upper.classList.remove("active-choice");
+      lower.classList.remove("active-choice");
+      (currentLetterVariant === "upper" ? upper : lower).classList.add("active-choice");
+
+      document.getElementById("lettersEmoji").textContent = LETTER_EMOJIS[currentLetter] || "✨";
+
+      drawGuideText(
+        document.getElementById("lettersCanvas"),
+        currentLetterVariant === "upper" ? currentLetter.toUpperCase() : currentLetter.toLowerCase(),
+        currentLetterVariant === "upper"
+          ? "bold 190px Arial"
+          : "bold 170px Arial"
+      );
+    }
+    document.getElementById("lettersNew").onclick = newLetters;
+
+    document.getElementById("btnNumbers").onclick = () => {
+      newNumbers();
+      showScreen("numbers");
+    };
+
+    function renderNumberGrid(count, emoji) {
+      const grid = document.getElementById("numbersGrid");
+      grid.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const d = document.createElement("div");
+        d.className = "number-emoji-cell";
+        d.textContent = emoji;
+        grid.appendChild(d);
+      }
+    }
+
+    function newNumbers() {
+      currentNumber = randomItem("0123456789".split(""));
+      currentNumberEmoji = randomItem(NUMBER_EMOJIS);
+      document.getElementById("numbersValue").textContent = currentNumber;
+      renderNumberGrid(parseInt(currentNumber, 10), currentNumberEmoji);
+      drawGuideText(
+        document.getElementById("numbersCanvas"),
+        currentNumber,
+        "bold 200px Arial",
+        "#fb8c00"
+      );
+    }
+    document.getElementById("numbersNew").onclick = newNumbers;
+
+    document.getElementById("btnName").onclick = () => {
+      nameWordIndex = 0;
+      nameCharIndex = 0;
+      renderName();
+      showScreen("name");
+    };
+
+    function buildNameHTML(word, currentIndex) {
+      return word.split("").map((char, idx) => {
+        let cls = "name-char";
+        if (idx < currentIndex) cls += " done";
+        else if (idx === currentIndex) cls += " current";
+        return `<span class="${cls}">${char}</span>`;
+      }).join("");
+    }
+
+    function renderName() {
+      const word = NAME_WORDS[nameWordIndex];
+      const char = word[nameCharIndex];
+      document.getElementById("nameWord").innerHTML = buildNameHTML(word, nameCharIndex);
+      drawGuideText(document.getElementById("nameCanvas"), char, "bold 190px Arial", "#607d8b");
+    }
+
+    document.getElementById("nameNext").onclick = () => {
+      const word = NAME_WORDS[nameWordIndex];
+      nameCharIndex++;
+      if (nameCharIndex >= word.length) {
+        nameCharIndex = 0;
+        nameWordIndex++;
+        if (nameWordIndex >= NAME_WORDS.length) nameWordIndex = 0;
+      }
+      renderName();
+    };
+
+    document.getElementById("btnShapes").onclick = () => {
+      newShape();
+      showScreen("shapes");
+    };
+
+    function drawHeart(ctx, x, y, size) {
+      ctx.beginPath();
+      const topCurveHeight = size * 0.3;
+      ctx.moveTo(x, y + topCurveHeight);
+      ctx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
+      ctx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 2, x, y + size);
+      ctx.bezierCurveTo(x, y + (size + topCurveHeight) / 2, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
+      ctx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
+    }
+
+    function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius) {
+      let rot = Math.PI / 2 * 3;
+      const step = Math.PI / spikes;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - outerRadius);
+      for (let i = 0; i < spikes; i++) {
+        ctx.lineTo(cx + Math.cos(rot) * outerRadius, cy + Math.sin(rot) * outerRadius);
+        rot += step;
+        ctx.lineTo(cx + Math.cos(rot) * innerRadius, cy + Math.sin(rot) * innerRadius);
+        rot += step;
+      }
+      ctx.lineTo(cx, cy - outerRadius);
+      ctx.closePath();
+    }
+
+    function drawShape(canvas, shape, color, alpha = 0.18, lineWidth = 18) {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      if (shape === "circle") {
+        ctx.beginPath();
+        ctx.arc(cx, cy, 95, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (shape === "square") {
+        ctx.strokeRect(cx - 95, cy - 95, 190, 190);
+      } else if (shape === "triangle") {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 110);
+        ctx.lineTo(cx - 110, cy + 95);
+        ctx.lineTo(cx + 110, cy + 95);
+        ctx.closePath();
+        ctx.stroke();
+      } else if (shape === "heart") {
+        drawHeart(ctx, cx, cy - 70, 180);
+        ctx.stroke();
+      } else if (shape === "star") {
+        drawStar(ctx, cx, cy, 5, 110, 48);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function newShape() {
+      let next = randomItem(SHAPES);
+      while (next === currentShape && SHAPES.length > 1) next = randomItem(SHAPES);
+      currentShape = next;
+      document.getElementById("shapeLabel").textContent =
+        currentShape.charAt(0).toUpperCase() + currentShape.slice(1);
+      drawShape(document.getElementById("shapesCanvas"), currentShape, "#26a69a", 0.18, 18);
+      drawShape(document.getElementById("shapesPreview"), currentShape, "#26a69a", 1, 14);
+    }
+    document.getElementById("shapesNew").onclick = newShape;
+
+    document.getElementById("btnPatterns").onclick = () => {
+      newPattern();
+      showScreen("patterns");
+    };
+
+    const PATTERN_SETS = [
+      { seq: ["⬛", "⬜", "⬛", "⬜"], answer: "⬛", wrong: ["⬜", "🟦", "⭐"] },
+      { seq: ["🔵", "🔴", "🔵", "🔴"], answer: "🔵", wrong: ["🔴", "🟢", "🟡"] },
+      { seq: ["⭐", "🌙", "⭐", "🌙"], answer: "⭐", wrong: ["🌙", "☀️", "☁️"] },
+      { seq: ["🟩", "🟨", "🟩", "🟨"], answer: "🟩", wrong: ["🟨", "🟦", "🟥"] }
+    ];
+
+    function shuffle(arr) {
+      return [...arr].sort(() => Math.random() - 0.5);
+    }
+
+    function newPattern() {
+      const p = randomItem(PATTERN_SETS);
+      const strip = document.getElementById("patternStrip");
+      const options = document.getElementById("patternOptions");
+      const feedback = document.getElementById("patternFeedback");
+      feedback.textContent = "";
+      strip.innerHTML = p.seq.map(x => `<span>${x}</span>`).join("") + `<span> ?</span>`;
+
+      const choices = shuffle([p.answer, ...p.wrong.slice(0, 3)]);
+      options.innerHTML = "";
+
+      choices.forEach(choice => {
+        const d = document.createElement("div");
+        d.className = "pattern-option";
+        d.textContent = choice;
+        d.onclick = () => {
+          feedback.textContent = choice === p.answer ? "Nice pattern!" : "Try another one.";
+        };
+        options.appendChild(d);
+      });
+    }
+    document.getElementById("newPattern").onclick = newPattern;
+
+    document.getElementById("btnChallenges").onclick = () => {
+      newChallenge();
+      showScreen("challenges");
+    };
+
+    const CHALLENGES = [
+      "Trace the uppercase letter.",
+      "Trace the lowercase letter.",
+      "Count the stars.",
+      "Find the next pattern piece.",
+      "Trace three circles.",
+      "Trace the first letter in your name.",
+      "Make a square with your finger in the air.",
+      "Point to something blue in the room.",
+      "Count to five.",
+      "Trace one big triangle."
+    ];
+
+    function newChallenge() {
+      document.getElementById("challengeCard").textContent = randomItem(CHALLENGES);
+    }
+    document.getElementById("newChallenge").onclick = newChallenge;
+  </script>
+</body>
+</html>
