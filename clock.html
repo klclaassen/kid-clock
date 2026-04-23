@@ -111,7 +111,7 @@
     const BED_MINUTE = 30;
 
     const WAKE_HOUR = 5;         // example: 7:00 AM
-    const WAKE_MINUTE = 0;
+    const WAKE_MINUTE = 45;
 
     const WARNING_MINUTES = 10;  // "almost time" before wake
     const WAKE_SCREEN_HOURS = 1; // show sunshine wake screen for 1 hour
@@ -172,20 +172,21 @@
       const almostTime = isSleeping && minsLeft > 0 && minsLeft <= WARNING_MINUTES;
       const isWakeWindow = now >= currentWakeTime && now < wakeScreenEnd;
 
-      if (almostTime) {
-        const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
-
-        body.style.background = "linear-gradient(180deg, #283593 0%, #f9a825 100%)";
-        body.style.color = "white";
-        iconEl.textContent = "";
-        msgEl.textContent = "";
-        barWrap.style.display = "block";
-        barFill.style.width = progress + "%";
-        minutesEl.textContent = minsLeft === 1
-          ? "1 minute until wake-up"
-          : `${minsLeft} minutes until wake-up`;
-
-      } else if (isSleeping) {
+      // if (almostTime) {
+      //   const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
+      //
+      //   body.style.background = "linear-gradient(180deg, #283593 0%, #f9a825 100%)";
+      //   body.style.color = "white";
+      //   iconEl.textContent = "";
+      //   msgEl.textContent = "";
+      //   barWrap.style.display = "block";
+      //   barFill.style.width = progress + "%";
+      //   minutesEl.textContent = minsLeft === 1
+      //     ? "1 minute until wake-up"
+      //     : `${minsLeft} minutes until wake-up`;
+      //
+      // } else if (isSleeping) {
+      if (isSleeping) {
         body.style.background = "#1A237E";
         body.style.color = "white";
         iconEl.textContent = "🌙";
