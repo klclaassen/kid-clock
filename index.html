@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <title>Kid Clock</title>
   <style>
+    :root {
+      --bg-color: #1A237E;
+      --text-color: white;
+    }
+
     html, body {
       margin: 0;
       height: 100%;
@@ -20,8 +25,8 @@
       box-sizing: border-box;
       padding: 4vh 5vw;
       transition: background 0.35s ease, color 0.35s ease;
-      background: #1A237E;
-      color: white;
+      background: var(--bg-color);
+      color: var(--text-color);
     }
 
     #icon {
@@ -87,6 +92,98 @@
       font-weight: bold;
       line-height: 1.1;
     }
+
+    .settings-toggle {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      width: 2.8rem;
+      height: 2.8rem;
+      border: none;
+      border-radius: 999px;
+      background: var(--bg-color);
+      color: transparent;
+      cursor: pointer;
+      opacity: 0;
+      padding: 0;
+      z-index: 30;
+    }
+
+    .settings-toggle:focus-visible {
+      outline: 2px solid rgba(255,255,255,0.7);
+      outline-offset: 2px;
+      opacity: 0.25;
+    }
+
+    .settings-panel {
+      position: fixed;
+      right: 1rem;
+      bottom: 4.5rem;
+      width: min(92vw, 320px);
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      border-radius: 16px;
+      padding: 1rem;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      display: none;
+      z-index: 25;
+    }
+
+    .settings-panel.open {
+      display: block;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .setting-row label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    .setting-row input[type="number"] {
+      width: 4.4rem;
+      padding: 0.35rem 0.4rem;
+      border-radius: 6px;
+      border: none;
+    }
+
+    .setting-row input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #FFD54F;
+    }
+
+    .panel-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+      margin-top: 0.9rem;
+    }
+
+    .panel-actions button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.45rem 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .panel-actions .apply-btn {
+      background: #FFD54F;
+      color: #222;
+    }
+
+    .panel-actions .close-btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -105,16 +202,49 @@
     <div id="minutes"></div>
   </div>
 
+  <button id="settings-toggle" class="settings-toggle" aria-label="Open settings" aria-expanded="false" title="Open settings"></button>
+
+  <div id="settings-panel" class="settings-panel" role="dialog" aria-label="Clock settings">
+    <div class="setting-row">
+      <label for="bed-hour">Bed hour</label>
+      <input id="bed-hour" type="number" min="0" max="23" step="1">
+    </div>
+    <div class="setting-row">
+      <label for="bed-minute">Bed minute</label>
+      <input id="bed-minute" type="number" min="0" max="59" step="1">
+    </div>
+    <div class="setting-row">
+      <label for="wake-hour">Wake hour</label>
+      <input id="wake-hour" type="number" min="0" max="23" step="1">
+    </div>
+    <div class="setting-row">
+      <label for="wake-minute">Wake minute</label>
+      <input id="wake-minute" type="number" min="0" max="59" step="1">
+    </div>
+    <div class="setting-row">
+      <label for="warning-minutes">Warning mins</label>
+      <input id="warning-minutes" type="number" min="0" max="180" step="1">
+    </div>
+    <div class="setting-row">
+      <label for="show-almost-time">Show almost-time screen</label>
+      <input id="show-almost-time" type="checkbox">
+    </div>
+    <div class="panel-actions">
+      <button class="close-btn" id="settings-close" type="button">Close</button>
+      <button class="apply-btn" id="settings-apply" type="button">Apply</button>
+    </div>
+  </div>
+
   <script>
-    // SETTINGS
-    const BED_HOUR = 18;         // 6:30 PM
-    const BED_MINUTE = 30;
-
-    const WAKE_HOUR = 6;         // example: 7:00 AM
-    const WAKE_MINUTE = 00;
-
-    const WARNING_MINUTES = 10;  // "almost time" before wake
-    const WAKE_SCREEN_HOURS = 1; // show sunshine wake screen for 1 hour
+    const settings = {
+      bedHour: 18,
+      bedMinute: 30,
+      wakeHour: 6,
+      wakeMinute: 0,
+      warningMinutes: 10,
+      showAlmostTime: true,
+      wakeScreenHours: 1
+    };
 
     const body = document.body;
     const iconEl = document.getElementById("icon");
@@ -123,6 +253,17 @@
     const barWrap = document.getElementById("bar-wrap");
     const barFill = document.getElementById("bar-fill");
     const minutesEl = document.getElementById("minutes");
+    const settingsToggle = document.getElementById("settings-toggle");
+    const settingsPanel = document.getElementById("settings-panel");
+    const settingsCloseBtn = document.getElementById("settings-close");
+    const settingsApplyBtn = document.getElementById("settings-apply");
+
+    const bedHourInput = document.getElementById("bed-hour");
+    const bedMinuteInput = document.getElementById("bed-minute");
+    const wakeHourInput = document.getElementById("wake-hour");
+    const wakeMinuteInput = document.getElementById("wake-minute");
+    const warningInput = document.getElementById("warning-minutes");
+    const showAlmostTimeInput = document.getElementById("show-almost-time");
 
     function formatTime(date) {
       let h = date.getHours();
@@ -138,76 +279,103 @@
       return d;
     }
 
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function applySettingsFromInputs() {
+      settings.bedHour = clamp(parseInt(bedHourInput.value, 10) || 0, 0, 23);
+      settings.bedMinute = clamp(parseInt(bedMinuteInput.value, 10) || 0, 0, 59);
+      settings.wakeHour = clamp(parseInt(wakeHourInput.value, 10) || 0, 0, 23);
+      settings.wakeMinute = clamp(parseInt(wakeMinuteInput.value, 10) || 0, 0, 59);
+      settings.warningMinutes = clamp(parseInt(warningInput.value, 10) || 0, 0, 180);
+      settings.showAlmostTime = showAlmostTimeInput.checked;
+      updateClock();
+    }
+
+    function syncInputs() {
+      bedHourInput.value = settings.bedHour;
+      bedMinuteInput.value = settings.bedMinute;
+      wakeHourInput.value = settings.wakeHour;
+      wakeMinuteInput.value = settings.wakeMinute;
+      warningInput.value = settings.warningMinutes;
+      showAlmostTimeInput.checked = settings.showAlmostTime;
+    }
+
+    function setTheme(background, color) {
+      body.style.background = background;
+      body.style.color = color;
+      body.style.setProperty("--bg-color", background);
+      body.style.setProperty("--text-color", color);
+    }
+
+    function openSettings() {
+      syncInputs();
+      settingsPanel.classList.add("open");
+      settingsToggle.setAttribute("aria-expanded", "true");
+    }
+
+    function closeSettings() {
+      settingsPanel.classList.remove("open");
+      settingsToggle.setAttribute("aria-expanded", "false");
+    }
+
     function updateClock() {
       const now = new Date();
       timeEl.textContent = formatTime(now);
 
-      const todayBed = getTimeOnDate(now, BED_HOUR, BED_MINUTE);
-      const todayWake = getTimeOnDate(now, WAKE_HOUR, WAKE_MINUTE);
+      const todayBed = getTimeOnDate(now, settings.bedHour, settings.bedMinute);
+      const todayWake = getTimeOnDate(now, settings.wakeHour, settings.wakeMinute);
 
       let currentSleepStart, currentWakeTime;
 
-      // Figure out which sleep block we are currently around
       if (now >= todayBed) {
-        // after today's bedtime, next wake is tomorrow
         currentSleepStart = todayBed;
         currentWakeTime = new Date(todayWake);
         currentWakeTime.setDate(currentWakeTime.getDate() + 1);
       } else if (now < todayWake) {
-        // after midnight but before wake-up, sleep started yesterday
         currentSleepStart = new Date(todayBed);
         currentSleepStart.setDate(currentSleepStart.getDate() - 1);
         currentWakeTime = todayWake;
       } else {
-        // daytime between wake-up and bedtime
         currentSleepStart = todayBed;
         currentWakeTime = todayWake;
       }
 
       const wakeScreenEnd = new Date(currentWakeTime);
-      wakeScreenEnd.setHours(wakeScreenEnd.getHours() + WAKE_SCREEN_HOURS);
+      wakeScreenEnd.setHours(wakeScreenEnd.getHours() + settings.wakeScreenHours);
 
       const isSleeping = now >= currentSleepStart && now < currentWakeTime;
       const minsLeft = Math.ceil((currentWakeTime - now) / 60000);
-      const almostTime = isSleeping && minsLeft > 0 && minsLeft <= WARNING_MINUTES;
+      const almostTime = isSleeping && settings.showAlmostTime && minsLeft > 0 && minsLeft <= settings.warningMinutes;
       const isWakeWindow = now >= currentWakeTime && now < wakeScreenEnd;
 
-      // if (almostTime) {
-      //   const progress = ((WARNING_MINUTES - minsLeft) / WARNING_MINUTES) * 100;
-      //
-      //   body.style.background = "linear-gradient(180deg, #283593 0%, #f9a825 100%)";
-      //   body.style.color = "white";
-      //   iconEl.textContent = "";
-      //   msgEl.textContent = "";
-      //   barWrap.style.display = "block";
-      //   barFill.style.width = progress + "%";
-      //   minutesEl.textContent = minsLeft === 1
-      //     ? "1 minute until wake-up"
-      //     : `${minsLeft} minutes until wake-up`;
-      //
-      // } else if (isSleeping) {
-      if (isSleeping) {
-        body.style.background = "#1A237E";
-        body.style.color = "white";
+      if (almostTime) {
+        const progress = ((settings.warningMinutes - minsLeft) / settings.warningMinutes) * 100;
+        setTheme("linear-gradient(180deg, #283593 0%, #f9a825 100%)", "white");
+        iconEl.textContent = "🌅";
+        msgEl.textContent = "Almost time";
+        barWrap.style.display = "block";
+        barFill.style.width = Math.max(0, Math.min(100, progress)) + "%";
+        minutesEl.textContent = minsLeft === 1
+          ? "1 minute until wake-up"
+          : `${minsLeft} minutes until wake-up`;
+      } else if (isSleeping) {
+        setTheme("#1A237E", "white");
         iconEl.textContent = "🌙";
         msgEl.textContent = "Sleep time";
         barWrap.style.display = "none";
         barFill.style.width = "0%";
         minutesEl.textContent = "";
-
       } else if (isWakeWindow) {
-        body.style.background = "#FFD54F";
-        body.style.color = "#222";
+        setTheme("#FFD54F", "#222");
         iconEl.textContent = "🌞";
         msgEl.textContent = "Time to wake up!";
         barWrap.style.display = "none";
         barFill.style.width = "0%";
         minutesEl.textContent = "";
-
       } else {
-        // Plain daytime clock only
-        body.style.background = "#ffffff";
-        body.style.color = "#222";
+        setTheme("#ffffff", "#222");
         iconEl.textContent = "";
         msgEl.textContent = "";
         barWrap.style.display = "none";
@@ -215,6 +383,23 @@
         minutesEl.textContent = "";
       }
     }
+
+    settingsToggle.addEventListener("click", openSettings);
+    settingsCloseBtn.addEventListener("click", closeSettings);
+    settingsApplyBtn.addEventListener("click", () => {
+      applySettingsFromInputs();
+      closeSettings();
+    });
+
+    [bedHourInput, bedMinuteInput, wakeHourInput, wakeMinuteInput, warningInput, showAlmostTimeInput].forEach((input) => {
+      input.addEventListener("input", applySettingsFromInputs);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (settingsPanel.classList.contains("open") && !settingsPanel.contains(event.target) && event.target !== settingsToggle) {
+        closeSettings();
+      }
+    });
 
     updateClock();
     setInterval(updateClock, 1000);
